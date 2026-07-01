@@ -201,12 +201,12 @@ export function SpotEditForm({
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">위치</h2>
         <Field label="주소"><Input {...register("address")} /></Field>
         <Field label="상세 주소"><Input {...register("address_detail")} /></Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="도/광역시"><Input {...register("region_province")} /></Field>
           <Field label="시/군/구"><Input {...register("region_city")} /></Field>
         </div>
         <Field label="우편번호"><Input {...register("postal_code")} /></Field>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="위도"><Input {...register("latitude")} type="number" step="any" /></Field>
           <Field label="경도"><Input {...register("longitude")} type="number" step="any" /></Field>
           <Field label="고도(m)"><Input {...register("altitude")} type="number" step="any" /></Field>
@@ -215,7 +215,7 @@ export function SpotEditForm({
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">시설 / 정책</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="유료 여부">
             <select {...register("is_fee_required")} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">
               <option value="">-</option>
@@ -232,7 +232,7 @@ export function SpotEditForm({
           </Field>
         </div>
         <Field label="반려동물 정책"><Input {...register("pet_policy")} /></Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="사이트 수"><Input {...register("unit_count")} type="number" /></Field>
           <Field label="총 면적(㎡)"><Input {...register("total_area_m2")} type="number" step="any" /></Field>
         </div>

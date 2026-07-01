@@ -66,16 +66,16 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
           저장되었습니다.
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
-        <form>
+        <form className="w-full sm:w-auto">
           <input type="hidden" name="sort" value={sort} />
           <input type="hidden" name="order" value={order} />
-          <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-64" />
+          <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
         </form>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

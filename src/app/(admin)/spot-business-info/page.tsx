@@ -69,7 +69,7 @@ export default async function BusinessInfoPage({
           저장되었습니다.
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">
           Spot Business Info{" "}
           <span className="text-zinc-400 text-base font-normal">{total}개</span>
@@ -84,7 +84,7 @@ export default async function BusinessInfoPage({
         )}
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

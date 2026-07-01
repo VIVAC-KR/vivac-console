@@ -105,7 +105,7 @@ export function SbiEditForm({
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">사업자 정보</h2>
         <Field label="사업자 등록번호"><Input {...register("business_reg_no")} /></Field>
         <Field label="관광사업 등록번호"><Input {...register("tourism_business_reg_no")} /></Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="사업유형"><Input {...register("business_type")} /></Field>
           <Field label="운영유형"><Input {...register("operation_type")} /></Field>
         </div>
@@ -116,11 +116,11 @@ export function SbiEditForm({
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">국립공원</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="국립공원 번호"><Input {...register("national_park_no")} type="number" /></Field>
           <Field label="사무소 코드"><Input {...register("national_park_office_code")} /></Field>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="일련번호"><Input {...register("national_park_serial_no")} /></Field>
           <Field label="카테고리 코드"><Input {...register("national_park_category_code")} /></Field>
         </div>
