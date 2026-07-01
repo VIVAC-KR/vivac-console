@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
@@ -19,6 +20,7 @@ export async function apiFetch<T>(
     headers: { ...(await authHeaders()), ...init?.headers },
     cache: "no-store",
   });
+  if (res.status === 401) redirect("/login");
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`API ${res.status}: ${body}`);
@@ -37,6 +39,7 @@ export async function apiList<T>(
   }
   const headers = await authHeaders();
   const res = await fetch(`${BASE}${path}?${q}`, { headers, cache: "no-store" });
+  if (res.status === 401) redirect("/login");
   if (!res.ok) throw new Error(`API ${res.status}`);
   const total = Number(res.headers.get("x-total-count") ?? 0);
   const data = (await res.json()) as T[];
