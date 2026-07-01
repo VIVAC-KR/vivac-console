@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
@@ -97,10 +97,11 @@ export function SpotEditForm({
   onSave,
 }: {
   spot: SpotDetail;
-  onSave: (uid: string, data: Record<string, unknown>) => Promise<void>;
+  onSave: (uid: string, data: Record<string, unknown>) => Promise<string | null>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const { register, handleSubmit } = useForm<FormValues>({
     defaultValues: {
@@ -136,8 +137,9 @@ export function SpotEditForm({
   });
 
   function onSubmit(values: FormValues) {
+    setError(null);
     startTransition(async () => {
-      await onSave(spot.uid, {
+      const result = await onSave(spot.uid, {
         title: values.title || undefined,
         address: values.address || null,
         address_detail: values.address_detail || null,
@@ -167,12 +169,25 @@ export function SpotEditForm({
         total_area_m2: parseNum(values.total_area_m2),
         has_liability_insurance: parseBool(values.has_liability_insurance),
       });
-      router.push("/spots");
+      if (result) {
+        setError(result);
+        return;
+      }
+      router.push("/spots?saved=1");
     });
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
+      {error && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
+        >
+          {error}
+        </div>
+      )}
+
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">기본 정보</h2>
         <Field label="이름 *"><Input {...register("title")} required /></Field>

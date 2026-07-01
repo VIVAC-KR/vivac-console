@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ClickableRow } from "@/components/admin/clickable-row";
+import { ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -29,10 +31,11 @@ type SearchParams = Promise<{
   sort?: string;
   order?: string;
   q?: string;
+  saved?: string;
 }>;
 
 export default async function SpotsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { page = "1", sort = "updated_at", order = "desc", q } = await searchParams;
+  const { page = "1", sort = "updated_at", order = "desc", q, saved } = await searchParams;
   const currentPage = Math.max(1, Number(page));
   const start = (currentPage - 1) * PAGE_SIZE;
 
@@ -58,6 +61,11 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
 
   return (
     <div className="flex flex-col gap-6">
+      {saved && (
+        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+          저장되었습니다.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
         <form>
@@ -83,7 +91,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
           </TableHeader>
           <TableBody>
             {spots.map((spot) => (
-              <TableRow key={spot.uid}>
+              <ClickableRow key={spot.uid} href={`/spots/${spot.uid}/edit`}>
                 <TableCell className="font-medium">{spot.title}</TableCell>
                 <TableCell>
                   {spot.source ? <Badge variant="secondary">{spot.source}</Badge> : <span className="text-zinc-400">-</span>}
@@ -95,12 +103,12 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
                 <TableCell className="text-zinc-500 text-xs">
                   {spot.updated_at ? new Date(spot.updated_at).toLocaleDateString("ko-KR") : "-"}
                 </TableCell>
-                <TableCell>
-                  <Link href={`/spots/${spot.uid}/edit`} className="text-sm text-blue-600 hover:underline">
-                    편집
+                <TableCell className="w-8 text-right">
+                  <Link href={`/spots/${spot.uid}/edit`} aria-label="편집" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+                    <ChevronRight className="size-4 inline" />
                   </Link>
                 </TableCell>
-              </TableRow>
+              </ClickableRow>
             ))}
             {spots.length === 0 && (
               <TableRow>

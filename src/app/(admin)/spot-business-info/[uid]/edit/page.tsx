@@ -22,7 +22,11 @@ type BusinessInfoDetail = {
   updated_at: string | null;
 };
 
-async function saveBusinessInfo(uid: string, data: Record<string, unknown>) {
+/** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
+async function saveBusinessInfo(
+  uid: string,
+  data: Record<string, unknown>
+): Promise<string | null> {
   "use server";
   const session = await auth();
   const res = await fetch(
@@ -36,7 +40,11 @@ async function saveBusinessInfo(uid: string, data: Record<string, unknown>) {
       body: JSON.stringify(data),
     }
   );
-  if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    return `저장 실패 (${res.status}) ${body}`.trim();
+  }
+  return null;
 }
 
 export default async function BusinessInfoEditPage({
@@ -61,7 +69,13 @@ export default async function BusinessInfoEditPage({
         </Link>
         <h1 className="mt-2 text-xl font-semibold">Business Info 편집</h1>
         <p className="text-xs text-zinc-400 mt-1">
-          Spot: <span className="font-mono">{info.spot_uid}</span>
+          Spot:{" "}
+          <Link
+            href={`/spots/${info.spot_uid}/edit`}
+            className="font-mono text-blue-600 hover:underline"
+          >
+            {info.spot_uid}
+          </Link>
           {info.updated_at && ` · 수정일: ${new Date(info.updated_at).toLocaleString("ko-KR")}`}
         </p>
       </div>

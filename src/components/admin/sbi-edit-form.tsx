@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
@@ -42,10 +42,11 @@ export function SbiEditForm({
   onSave,
 }: {
   info: BusinessInfoDetail;
-  onSave: (uid: string, data: Record<string, unknown>) => Promise<void>;
+  onSave: (uid: string, data: Record<string, unknown>) => Promise<string | null>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const { register, handleSubmit } = useForm<FormValues>({
     defaultValues: {
@@ -64,8 +65,9 @@ export function SbiEditForm({
   });
 
   function onSubmit(values: FormValues) {
+    setError(null);
     startTransition(async () => {
-      await onSave(info.uid, {
+      const result = await onSave(info.uid, {
         business_reg_no: values.business_reg_no || null,
         tourism_business_reg_no: values.tourism_business_reg_no || null,
         business_type: values.business_type || null,
@@ -80,12 +82,25 @@ export function SbiEditForm({
         national_park_category_code: values.national_park_category_code || null,
         licensed_at: values.licensed_at || null,
       });
-      router.push("/spot-business-info");
+      if (result) {
+        setError(result);
+        return;
+      }
+      router.push("/spot-business-info?saved=1");
     });
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
+      {error && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
+        >
+          {error}
+        </div>
+      )}
+
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">사업자 정보</h2>
         <Field label="사업자 등록번호"><Input {...register("business_reg_no")} /></Field>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/admin/theme-toggle";
 
 export default async function AdminLayout({
   children,
@@ -14,7 +15,9 @@ export default async function AdminLayout({
       {/* Sidebar */}
       <aside className="w-52 shrink-0 border-r bg-zinc-50 dark:bg-zinc-950 flex flex-col">
         <div className="px-4 py-5 border-b">
-          <span className="font-semibold text-sm tracking-tight">VIVAC 콘솔</span>
+          <Link href="/" className="font-semibold text-sm tracking-tight hover:opacity-70 transition-opacity">
+            VIVAC
+          </Link>
         </div>
         <nav className="flex flex-col gap-1 p-3 flex-1">
           <Link
@@ -30,8 +33,9 @@ export default async function AdminLayout({
             Business Info
           </Link>
         </nav>
-        <div className="p-3 border-t">
-          <p className="text-xs text-zinc-500 truncate mb-2">{session?.user?.email}</p>
+        <div className="p-3 border-t flex flex-col gap-3">
+          <ThemeToggle />
+          <p className="text-xs text-zinc-500 truncate">{session?.user?.email}</p>
           <form
             action={async () => {
               "use server";

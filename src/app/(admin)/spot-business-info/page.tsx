@@ -9,6 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ClickableRow } from "@/components/admin/clickable-row";
+import { ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -25,6 +27,7 @@ type SearchParams = Promise<{
   sort?: string;
   order?: string;
   spot_uid?: string;
+  saved?: string;
 }>;
 
 export default async function BusinessInfoPage({
@@ -32,7 +35,7 @@ export default async function BusinessInfoPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { page = "1", sort = "updated_at", order = "desc", spot_uid } = await searchParams;
+  const { page = "1", sort = "updated_at", order = "desc", spot_uid, saved } = await searchParams;
   const currentPage = Math.max(1, Number(page));
   const start = (currentPage - 1) * PAGE_SIZE;
 
@@ -61,11 +64,24 @@ export default async function BusinessInfoPage({
 
   return (
     <div className="flex flex-col gap-6">
+      {saved && (
+        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+          저장되었습니다.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
           Spot Business Info{" "}
           <span className="text-zinc-400 text-base font-normal">{total}개</span>
         </h1>
+        {spot_uid && (
+          <Link
+            href="/spot-business-info"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            필터 해제 ✕
+          </Link>
+        )}
       </div>
 
       <div className="rounded-lg border">
@@ -81,7 +97,7 @@ export default async function BusinessInfoPage({
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.uid}>
+              <ClickableRow key={item.uid} href={`/spot-business-info/${item.uid}/edit`}>
                 <TableCell className="font-mono text-xs text-zinc-500">{item.spot_uid}</TableCell>
                 <TableCell>{item.business_type ?? "-"}</TableCell>
                 <TableCell>
@@ -96,15 +112,16 @@ export default async function BusinessInfoPage({
                     ? new Date(item.updated_at).toLocaleDateString("ko-KR")
                     : "-"}
                 </TableCell>
-                <TableCell>
+                <TableCell className="w-8 text-right">
                   <Link
                     href={`/spot-business-info/${item.uid}/edit`}
-                    className="text-sm text-blue-600 hover:underline"
+                    aria-label="편집"
+                    className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                   >
-                    편집
+                    <ChevronRight className="size-4 inline" />
                   </Link>
                 </TableCell>
-              </TableRow>
+              </ClickableRow>
             ))}
             {items.length === 0 && (
               <TableRow>

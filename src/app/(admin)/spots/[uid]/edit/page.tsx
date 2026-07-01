@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiList } from "@/lib/api";
 import { auth } from "@/auth";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 
@@ -42,7 +42,11 @@ type SpotDetail = {
   updated_at: string | null;
 };
 
-async function saveSpot(uid: string, data: Record<string, unknown>) {
+/** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
+async function saveSpot(
+  uid: string,
+  data: Record<string, unknown>
+): Promise<string | null> {
   "use server";
   const session = await auth();
   const res = await fetch(
@@ -56,7 +60,11 @@ async function saveSpot(uid: string, data: Record<string, unknown>) {
       body: JSON.stringify(data),
     }
   );
-  if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    return `저장 실패 (${res.status}) ${body}`.trim();
+  }
+  return null;
 }
 
 export default async function SpotEditPage({
@@ -73,6 +81,16 @@ export default async function SpotEditPage({
     notFound();
   }
 
+  // 이 스팟의 사업정보 (보통 1건). 1건이면 상세로 직행, 여러 건이면 필터 목록으로.
+  const { data: biList, total: biTotal } = await apiList<{ uid: string }>(
+    "/internal/spot-business-info",
+    { spot_uid: uid, _start: 0, _end: 1 }
+  );
+  const businessInfoHref =
+    biTotal === 1
+      ? `/spot-business-info/${biList[0].uid}/edit`
+      : `/spot-business-info?spot_uid=${uid}`;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -83,7 +101,36 @@ export default async function SpotEditPage({
           {spot.external_id && ` · ID: ${spot.external_id}`}
           {spot.updated_at && ` · 수정일: ${new Date(spot.updated_at).toLocaleString("ko-KR")}`}
         </p>
+        <div className="mt-2 flex gap-4 text-sm">
+          {biTotal > 0 ? (
+            <Link href={businessInfoHref} className="text-blue-600 hover:underline">
+              이 스팟의 사업정보 {biTotal > 1 ? `${biTotal}건 보기` : "보기"} →
+            </Link>
+          ) : (
+            <span className="text-zinc-400">사업정보 없음</span>
+          )}
+          {spot.latitude != null && spot.longitude != null && (
+            <a
+              href={`https://map.kakao.com/link/map/${encodeURIComponent(spot.title)},${spot.latitude},${spot.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              카카오맵에서 열기 ↗
+            </a>
+          )}
+        </div>
       </div>
+
+      {spot.latitude != null && spot.longitude != null && (
+        <iframe
+          title="위치 미리보기"
+          className="w-full max-w-2xl h-64 rounded-lg border"
+          loading="lazy"
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${spot.longitude - 0.01},${spot.latitude - 0.01},${spot.longitude + 0.01},${spot.latitude + 0.01}&layer=mapnik&marker=${spot.latitude},${spot.longitude}`}
+        />
+      )}
+
       <SpotEditForm spot={spot} onSave={saveSpot} />
     </div>
   );
