@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { TagsInput } from "@/components/admin/tags-input";
 
 // 배열 필드는 쉼표 구분 문자열로 표시
 type SpotDetail = {
@@ -103,7 +104,7 @@ export function SpotEditForm({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const { register, handleSubmit } = useForm<FormValues>({
+  const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     defaultValues: {
       title: spot.title,
       address: spot.address ?? "",
@@ -177,6 +178,13 @@ export function SpotEditForm({
     });
   }
 
+  // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지)
+  const tagsField = (name: keyof FormValues) => ({
+    value: parseArr(watch(name)) ?? [],
+    onChange: (v: string[]) =>
+      setValue(name, v.join(", "), { shouldDirty: true }),
+  });
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
       {error && (
@@ -193,8 +201,8 @@ export function SpotEditForm({
         <Field label="이름 *"><Input {...register("title")} required /></Field>
         <Field label="tagline"><Input {...register("tagline")} /></Field>
         <Field label="설명"><Textarea {...register("description")} rows={4} /></Field>
-        <Field label="카테고리 (쉼표 구분)"><Input {...register("category")} /></Field>
-        <Field label="테마 (쉼표 구분)"><Input {...register("themes")} /></Field>
+        <Field label="카테고리"><TagsInput {...tagsField("category")} /></Field>
+        <Field label="테마"><TagsInput {...tagsField("themes")} /></Field>
       </section>
 
       <section className="flex flex-col gap-4">
@@ -238,9 +246,9 @@ export function SpotEditForm({
         </div>
         <Field label="화로 유형"><Input {...register("fire_pit_type")} /></Field>
         <Field label="사이트 유형"><Input {...register("camp_sight_type")} /></Field>
-        <Field label="편의시설 (쉼표 구분)"><Input {...register("amenities")} /></Field>
-        <Field label="주변 시설 (쉼표 구분)"><Input {...register("nearby_facilities")} /></Field>
-        <Field label="렌탈 장비 (쉼표 구분)"><Input {...register("has_equipment_rental")} /></Field>
+        <Field label="편의시설"><TagsInput {...tagsField("amenities")} /></Field>
+        <Field label="주변 시설"><TagsInput {...tagsField("nearby_facilities")} /></Field>
+        <Field label="렌탈 장비"><TagsInput {...tagsField("has_equipment_rental")} /></Field>
         <Field label="특이사항"><Textarea {...register("features")} rows={3} /></Field>
         <Field label="배상책임보험">
           <select {...register("has_liability_insurance")} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">
