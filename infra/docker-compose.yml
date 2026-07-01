@@ -1,0 +1,21 @@
+services:
+  console:
+    image: vivacadmin/vivac-console:latest
+    restart: always
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    networks:
+      - vivac-network
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-northeast-2
+        awslogs-group: /vivac/console
+        awslogs-stream: nextjs
+        awslogs-create-group: "true"
+
+networks:
+  vivac-network:
+    external: true

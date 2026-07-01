@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+.next/
+dist/
+out/
+
+# env files (inject at runtime, not baked into image)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+
+# git
+.git/
+.gitignore
+
+# editor / OS
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# claude
+.claude/
+
+# docs
+*.md
