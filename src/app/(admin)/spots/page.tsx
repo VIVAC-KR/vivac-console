@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { apiList } from "@/lib/api";
+import { apiFetch, apiList } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ClickableRow } from "@/components/admin/clickable-row";
+import { ProvinceFilter } from "@/components/admin/province-filter";
 import { ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -31,13 +32,16 @@ type SearchParams = Promise<{
   sort?: string;
   order?: string;
   q?: string;
+  region_province?: string;
   saved?: string;
 }>;
 
 export default async function SpotsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { page = "1", sort = "updated_at", order = "desc", q, saved } = await searchParams;
+  const { page = "1", sort = "updated_at", order = "desc", q, region_province: region, saved } = await searchParams;
   const currentPage = Math.max(1, Number(page));
   const start = (currentPage - 1) * PAGE_SIZE;
+
+  const provinces = await apiFetch<string[]>("/internal/spots/provinces").catch(() => []);
 
   const { data: spots, total } = await apiList<SpotListItem>("/internal/spots", {
     _start: start,
@@ -45,13 +49,14 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
     _sort: sort,
     _order: order,
     title_like: q || undefined,
+    region_province: region || undefined,
   });
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   function sortLink(col: string) {
     const nextOrder = sort === col && order === "asc" ? "desc" : "asc";
-    return `?sort=${col}&order=${nextOrder}&q=${q ?? ""}&page=1`;
+    return `?sort=${col}&order=${nextOrder}&q=${q ?? ""}&region_province=${region ?? ""}&page=1`;
   }
 
   function sortIndicator(col: string) {
@@ -68,11 +73,15 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
-        <form className="w-full sm:w-auto">
-          <input type="hidden" name="sort" value={sort} />
-          <input type="hidden" name="order" value={order} />
-          <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
-        </form>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <ProvinceFilter provinces={provinces} value={region} />
+          <form className="w-full sm:w-auto">
+            <input type="hidden" name="sort" value={sort} />
+            <input type="hidden" name="order" value={order} />
+            <input type="hidden" name="region_province" value={region ?? ""} />
+            <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
+          </form>
+        </div>
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
@@ -125,13 +134,13 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
       {totalPages > 1 && (
         <div className="flex items-center gap-2 text-sm">
           {currentPage > 1 && (
-            <Link href={`?sort=${sort}&order=${order}&q=${q ?? ""}&page=${currentPage - 1}`} className="px-3 py-1 border rounded hover:bg-zinc-50">
+            <Link href={`?sort=${sort}&order=${order}&q=${q ?? ""}&region_province=${region ?? ""}&page=${currentPage - 1}`} className="px-3 py-1 border rounded hover:bg-zinc-50">
               이전
             </Link>
           )}
           <span className="text-zinc-500">{currentPage} / {totalPages}</span>
           {currentPage < totalPages && (
-            <Link href={`?sort=${sort}&order=${order}&q=${q ?? ""}&page=${currentPage + 1}`} className="px-3 py-1 border rounded hover:bg-zinc-50">
+            <Link href={`?sort=${sort}&order=${order}&q=${q ?? ""}&region_province=${region ?? ""}&page=${currentPage + 1}`} className="px-3 py-1 border rounded hover:bg-zinc-50">
               다음
             </Link>
           )}
