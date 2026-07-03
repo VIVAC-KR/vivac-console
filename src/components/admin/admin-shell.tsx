@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/admin/theme-toggle";
 
 const NAV = [
+  { href: "/dashboard", label: "대시보드" },
   { href: "/spots", label: "Spots" },
   { href: "/spot-business-info", label: "Business Info" },
 ];
