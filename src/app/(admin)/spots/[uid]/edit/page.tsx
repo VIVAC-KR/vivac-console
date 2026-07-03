@@ -3,6 +3,7 @@ import Link from "next/link";
 import { apiFetch, apiList } from "@/lib/api";
 import { auth } from "@/auth";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
+import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 
 type SpotDetail = {
   uid: string;
@@ -91,6 +92,11 @@ export default async function SpotEditPage({
       ? `/spot-business-info/${biList[0].uid}/edit`
       : `/spot-business-info?spot_uid=${uid}`;
 
+  // 수정 기록 — 실패해도 편집 화면은 유지 (편집이 우선)
+  const history = await apiFetch<HistoryEntry[]>(
+    `/internal/spots/${uid}/history`
+  ).catch(() => null);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -132,6 +138,10 @@ export default async function SpotEditPage({
       )}
 
       <SpotEditForm spot={spot} onSave={saveSpot} />
+
+      <div className="max-w-2xl">
+        <ChangeHistory entries={history} />
+      </div>
     </div>
   );
 }

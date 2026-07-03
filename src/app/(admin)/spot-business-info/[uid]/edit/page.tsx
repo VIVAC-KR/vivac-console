@@ -3,6 +3,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { auth } from "@/auth";
 import { SbiEditForm } from "@/components/admin/sbi-edit-form";
+import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 
 type BusinessInfoDetail = {
   uid: string;
@@ -61,6 +62,11 @@ export default async function BusinessInfoEditPage({
     notFound();
   }
 
+  // 수정 기록 — business_info 레코드 uid로 조회 (실패해도 편집 화면 유지)
+  const history = await apiFetch<HistoryEntry[]>(
+    `/internal/spot-business-info/${uid}/history`
+  ).catch(() => null);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -80,6 +86,10 @@ export default async function BusinessInfoEditPage({
         </p>
       </div>
       <SbiEditForm info={info} onSave={saveBusinessInfo} />
+
+      <div className="max-w-2xl">
+        <ChangeHistory entries={history} />
+      </div>
     </div>
   );
 }
