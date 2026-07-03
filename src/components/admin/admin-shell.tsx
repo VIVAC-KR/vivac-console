@@ -8,10 +8,14 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/admin/theme-toggle";
 
-const NAV = [
-  { href: "/dashboard", label: "대시보드" },
-  { href: "/spots", label: "Spots" },
-  { href: "/spot-business-info", label: "Business Info" },
+// 그룹별 네비게이션 (섹션 헤더로 스팟/기타 데이터 분리)
+const NAV_GROUPS: { title?: string; items: { href: string; label: string }[] }[] = [
+  { items: [{ href: "/dashboard", label: "대시보드" }] },
+  { title: "스팟", items: [{ href: "/spots", label: "Spots" }] },
+  {
+    title: "기타 데이터",
+    items: [{ href: "/spot-business-info", label: "Business Info" }],
+  },
 ];
 
 export function AdminShell({
@@ -71,25 +75,34 @@ export function AdminShell({
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 p-3">
-          {NAV.map((item) => {
-            const active = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex flex-1 flex-col gap-4 p-3">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.title ?? gi} className="flex flex-col gap-1">
+              {group.title && (
+                <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-zinc-400">
+                  {group.title}
+                </p>
+              )}
+              {group.items.map((item) => {
+                const active = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                        : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="flex flex-col gap-3 border-t p-3">
