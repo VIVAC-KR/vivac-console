@@ -66,6 +66,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
   });
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const hasActiveFilters = !!(q || Object.values(filterValues).some(Boolean));
 
   // 현재 정렬/검색/필터를 보존하며 링크 쿼리스트링 생성
   function buildQuery(overrides: Record<string, string>) {
@@ -113,6 +114,14 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
             ))}
             <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
           </form>
+          {hasActiveFilters && (
+            <Link
+              href="/spots"
+              className="shrink-0 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              초기화 ✕
+            </Link>
+          )}
         </div>
       </div>
 
