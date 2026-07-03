@@ -11,10 +11,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ClickableRow } from "@/components/admin/clickable-row";
-import { ProvinceFilter } from "@/components/admin/province-filter";
+import { FacetFilter } from "@/components/admin/facet-filter";
 import { ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 25;
+
+// 멀티 필터 설정 — 여기에 { param, label } 추가하면 필터·드롭다운이 자동으로 붙는다.
+// (백엔드 _FILTERABLE 화이트리스트에도 동일 param을 추가해야 함)
+const FACETS = [
+  { param: "region_province", label: "도/광역시" },
+  { param: "source", label: "소스" },
+] as const;
 
 type SpotListItem = {
   uid: string;
@@ -27,21 +34,27 @@ type SpotListItem = {
   updated_at: string | null;
 };
 
-type SearchParams = Promise<{
-  page?: string;
-  sort?: string;
-  order?: string;
-  q?: string;
-  region_province?: string;
-  saved?: string;
-}>;
+type SearchParams = Promise<Record<string, string | undefined>>;
 
 export default async function SpotsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { page = "1", sort = "updated_at", order = "desc", q, region_province: region, saved } = await searchParams;
-  const currentPage = Math.max(1, Number(page));
+  const sp = await searchParams;
+  const sort = sp.sort ?? "updated_at";
+  const order = sp.order ?? "desc";
+  const q = sp.q;
+  const saved = sp.saved;
+  const currentPage = Math.max(1, Number(sp.page ?? "1"));
   const start = (currentPage - 1) * PAGE_SIZE;
 
-  const provinces = await apiFetch<string[]>("/internal/spots/provinces").catch(() => []);
+  // 각 패싯의 옵션(distinct) 병렬 로드 (실패해도 빈 목록으로 degrade)
+  const facetOptions = await Promise.all(
+    FACETS.map((f) =>
+      apiFetch<string[]>(`/internal/spots/distinct/${f.param}`).catch(() => [])
+    )
+  );
+
+  // 활성 필터값
+  const filterValues: Record<string, string | undefined> = {};
+  for (const f of FACETS) filterValues[f.param] = sp[f.param];
 
   const { data: spots, total } = await apiList<SpotListItem>("/internal/spots", {
     _start: start,
@@ -49,14 +62,23 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
     _sort: sort,
     _order: order,
     title_like: q || undefined,
-    region_province: region || undefined,
+    ...filterValues,
   });
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  // 현재 정렬/검색/필터를 보존하며 링크 쿼리스트링 생성
+  function buildQuery(overrides: Record<string, string>) {
+    const params = new URLSearchParams();
+    const merged = { sort, order, q: q ?? "", ...filterValues, ...overrides };
+    for (const [k, v] of Object.entries(merged)) if (v) params.set(k, String(v));
+    const s = params.toString();
+    return s ? `?${s}` : "";
+  }
+
   function sortLink(col: string) {
     const nextOrder = sort === col && order === "asc" ? "desc" : "asc";
-    return `?sort=${col}&order=${nextOrder}&q=${q ?? ""}&region_province=${region ?? ""}&page=1`;
+    return buildQuery({ sort: col, order: nextOrder, page: "1" });
   }
 
   function sortIndicator(col: string) {
@@ -73,12 +95,22 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-          <ProvinceFilter provinces={provinces} value={region} />
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {FACETS.map((f, i) => (
+            <FacetFilter
+              key={f.param}
+              label={f.label}
+              param={f.param}
+              options={facetOptions[i]}
+              value={filterValues[f.param]}
+            />
+          ))}
           <form className="w-full sm:w-auto">
             <input type="hidden" name="sort" value={sort} />
             <input type="hidden" name="order" value={order} />
-            <input type="hidden" name="region_province" value={region ?? ""} />
+            {FACETS.map((f) => (
+              <input key={f.param} type="hidden" name={f.param} value={filterValues[f.param] ?? ""} />
+            ))}
             <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
           </form>
         </div>
@@ -134,13 +166,13 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
       {totalPages > 1 && (
         <div className="flex items-center gap-2 text-sm">
           {currentPage > 1 && (
-            <Link href={`?sort=${sort}&order=${order}&q=${q ?? ""}&region_province=${region ?? ""}&page=${currentPage - 1}`} className="px-3 py-1 border rounded hover:bg-zinc-50">
+            <Link href={buildQuery({ page: String(currentPage - 1) })} className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900">
               이전
             </Link>
           )}
           <span className="text-zinc-500">{currentPage} / {totalPages}</span>
           {currentPage < totalPages && (
-            <Link href={`?sort=${sort}&order=${order}&q=${q ?? ""}&region_province=${region ?? ""}&page=${currentPage + 1}`} className="px-3 py-1 border rounded hover:bg-zinc-50">
+            <Link href={buildQuery({ page: String(currentPage + 1) })} className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900">
               다음
             </Link>
           )}
