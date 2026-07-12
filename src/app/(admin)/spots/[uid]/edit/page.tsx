@@ -8,6 +8,7 @@ import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-hist
 type SpotDetail = {
   uid: string;
   title: string;
+  pipeline_status: string | null;
   source: string | null;
   external_id: string | null;
   address: string | null;

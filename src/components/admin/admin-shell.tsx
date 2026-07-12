@@ -11,7 +11,13 @@ import { ThemeToggle } from "@/components/admin/theme-toggle";
 // 그룹별 네비게이션 (섹션 헤더로 스팟/기타 데이터 분리)
 const NAV_GROUPS: { title?: string; items: { href: string; label: string }[] }[] = [
   { items: [{ href: "/dashboard", label: "대시보드" }] },
-  { title: "스팟", items: [{ href: "/spots", label: "Spots" }] },
+  {
+    title: "스팟",
+    items: [
+      { href: "/spots", label: "Spots" },
+      { href: "/spots?pipeline_status=ENRICHED", label: "검증 대기" },
+    ],
+  },
   {
     title: "기타 데이터",
     items: [{ href: "/spot-business-info", label: "Business Info" }],

@@ -3,6 +3,7 @@
 export const FIELD_LABELS: Record<string, string> = {
   // spots
   title: "이름",
+  pipeline_status: "파이프라인 상태",
   source: "소스",
   external_id: "외부 ID",
   address: "주소",

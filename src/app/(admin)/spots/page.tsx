@@ -19,6 +19,7 @@ const PAGE_SIZE = 25;
 // 멀티 필터 설정 — 여기에 { param, label } 추가하면 필터·드롭다운이 자동으로 붙는다.
 // (백엔드 _FILTERABLE 화이트리스트에도 동일 param을 추가해야 함)
 const FACETS = [
+  { param: "pipeline_status", label: "파이프라인 상태" },
   { param: "region_province", label: "도/광역시" },
   { param: "source", label: "소스" },
 ] as const;
@@ -26,6 +27,7 @@ const FACETS = [
 type SpotListItem = {
   uid: string;
   title: string;
+  pipeline_status: string | null;
   source: string | null;
   region_province: string | null;
   region_city: string | null;
@@ -130,6 +132,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
           <TableHeader>
             <TableRow>
               <TableHead><Link href={sortLink("title")}>이름{sortIndicator("title")}</Link></TableHead>
+              <TableHead>상태</TableHead>
               <TableHead>소스</TableHead>
               <TableHead><Link href={sortLink("region_province")}>도/광역시{sortIndicator("region_province")}</Link></TableHead>
               <TableHead>시/군/구</TableHead>
@@ -143,6 +146,15 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
             {spots.map((spot) => (
               <ClickableRow key={spot.uid} href={`/spots/${spot.uid}/edit`}>
                 <TableCell className="font-medium">{spot.title}</TableCell>
+                <TableCell>
+                  {spot.pipeline_status ? (
+                    <Badge variant={spot.pipeline_status === "ENRICHED" ? "default" : "outline"}>
+                      {spot.pipeline_status}
+                    </Badge>
+                  ) : (
+                    <span className="text-zinc-400">-</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   {spot.source ? <Badge variant="secondary">{spot.source}</Badge> : <span className="text-zinc-400">-</span>}
                 </TableCell>
@@ -162,7 +174,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
             ))}
             {spots.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-zinc-400 py-12">
+                <TableCell colSpan={9} className="text-center text-zinc-400 py-12">
                   데이터 없음
                 </TableCell>
               </TableRow>

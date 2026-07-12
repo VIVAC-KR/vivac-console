@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { TagsInput } from "@/components/admin/tags-input";
 
 // 배열 필드는 쉼표 구분 문자열로 표시
 type SpotDetail = {
   uid: string;
   title: string;
+  pipeline_status: string | null;
   address: string | null;
   address_detail: string | null;
   region_province: string | null;
@@ -103,6 +105,9 @@ export function SpotEditForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // 클릭된 버튼(저장/제출/반려)에 따라 함께 보낼 pipeline_status. 각 버튼 onClick에서 세팅.
+  const pendingStatusRef = useRef<"CURATED" | "REJECTED" | null>(null);
+  const isReviewQueueItem = spot.pipeline_status === "ENRICHED";
 
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     defaultValues: {
@@ -139,8 +144,10 @@ export function SpotEditForm({
 
   function onSubmit(values: FormValues) {
     setError(null);
+    const status = pendingStatusRef.current;
     startTransition(async () => {
       const result = await onSave(spot.uid, {
+        ...(status && { pipeline_status: status }),
         title: values.title || undefined,
         address: values.address || null,
         address_detail: values.address_detail || null,
@@ -174,7 +181,9 @@ export function SpotEditForm({
         setError(result);
         return;
       }
-      router.push("/spots?saved=1");
+      router.push(
+        status ? "/spots?pipeline_status=ENRICHED&saved=1" : "/spots?saved=1"
+      );
     });
   }
 
@@ -187,6 +196,14 @@ export function SpotEditForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
+      {spot.pipeline_status && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-zinc-500">파이프라인 상태</span>
+          <Badge variant={isReviewQueueItem ? "default" : "secondary"}>
+            {spot.pipeline_status}
+          </Badge>
+        </div>
+      )}
       {error && (
         <div
           role="alert"
@@ -198,7 +215,9 @@ export function SpotEditForm({
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">기본 정보</h2>
-        <Field label="이름 *"><Input {...register("title")} required /></Field>
+        <Field label="이름 *" extra={<SearchLink q={watch("title")} />}>
+          <Input {...register("title")} required />
+        </Field>
         <Field label="tagline"><Input {...register("tagline")} /></Field>
         <Field label="설명"><Textarea {...register("description")} rows={4} /></Field>
         <Field label="카테고리"><TagsInput {...tagsField("category")} /></Field>
@@ -207,7 +226,12 @@ export function SpotEditForm({
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">위치</h2>
-        <Field label="주소"><Input {...register("address")} /></Field>
+        <Field
+          label="주소"
+          extra={<SearchLink q={[watch("title"), watch("address")].filter(Boolean).join(" ")} />}
+        >
+          <Input {...register("address")} />
+        </Field>
         <Field label="상세 주소"><Input {...register("address_detail")} /></Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="도/광역시"><Input {...register("region_province")} /></Field>
@@ -261,15 +285,43 @@ export function SpotEditForm({
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">연락처 / 링크</h2>
-        <Field label="전화번호"><Input {...register("phone")} /></Field>
+        <Field
+          label="전화번호"
+          extra={<SearchLink q={[watch("title"), watch("phone")].filter(Boolean).join(" ")} />}
+        >
+          <Input {...register("phone")} />
+        </Field>
         <Field label="웹사이트"><Input {...register("website_url")} type="url" /></Field>
         <Field label="예약 링크"><Input {...register("booking_url")} type="url" /></Field>
       </section>
 
       <div className="flex gap-3 pt-2">
-        <Button type="submit" disabled={isPending}>
+        <Button
+          type="submit"
+          disabled={isPending}
+          onClick={() => (pendingStatusRef.current = null)}
+        >
           {isPending ? "저장 중…" : "저장"}
         </Button>
+        {isReviewQueueItem && (
+          <>
+            <Button
+              type="submit"
+              disabled={isPending}
+              onClick={() => (pendingStatusRef.current = "CURATED")}
+            >
+              제출
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={isPending}
+              onClick={() => (pendingStatusRef.current = "REJECTED")}
+            >
+              반려
+            </Button>
+          </>
+        )}
         <Button type="button" variant="ghost" onClick={() => router.push("/spots")}>
           취소
         </Button>
@@ -278,11 +330,37 @@ export function SpotEditForm({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  extra,
+  children,
+}: {
+  label: string;
+  extra?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-sm">{label}</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-sm">{label}</Label>
+        {extra}
+      </div>
       {children}
     </div>
+  );
+}
+
+/** 데이터 검증용 Google 검색 바로가기 — 값이 없으면 렌더링하지 않음 */
+function SearchLink({ q }: { q: string }) {
+  if (!q.trim()) return null;
+  return (
+    <a
+      href={`https://www.google.com/search?q=${encodeURIComponent(q)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-xs text-blue-600 hover:underline"
+    >
+      Google 검색 ↗
+    </a>
   );
 }
