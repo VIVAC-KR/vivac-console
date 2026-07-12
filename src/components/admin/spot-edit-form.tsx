@@ -225,6 +225,20 @@ export function SpotEditForm({
       </section>
 
       <section className="flex flex-col gap-4">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">연락처 / 링크</h2>
+        <Field
+          label="전화번호"
+          extra={<SearchLink q={[watch("title"), watch("phone")].filter(Boolean).join(" ")} />}
+        >
+          <Input {...register("phone")} />
+        </Field>
+        <Field label="웹사이트" extra={<OpenLink url={watch("website_url")} />}>
+          <Input {...register("website_url")} type="url" />
+        </Field>
+        <Field label="예약 링크"><Input {...register("booking_url")} type="url" /></Field>
+      </section>
+
+      <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">위치</h2>
         <Field
           label="주소"
@@ -281,20 +295,6 @@ export function SpotEditForm({
             <option value="false">미가입</option>
           </select>
         </Field>
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">연락처 / 링크</h2>
-        <Field
-          label="전화번호"
-          extra={<SearchLink q={[watch("title"), watch("phone")].filter(Boolean).join(" ")} />}
-        >
-          <Input {...register("phone")} />
-        </Field>
-        <Field label="웹사이트" extra={<OpenLink url={watch("website_url")} />}>
-          <Input {...register("website_url")} type="url" />
-        </Field>
-        <Field label="예약 링크"><Input {...register("booking_url")} type="url" /></Field>
       </section>
 
       <div className="flex gap-3 pt-2">
