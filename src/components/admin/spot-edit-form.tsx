@@ -291,7 +291,9 @@ export function SpotEditForm({
         >
           <Input {...register("phone")} />
         </Field>
-        <Field label="웹사이트"><Input {...register("website_url")} type="url" /></Field>
+        <Field label="웹사이트" extra={<OpenLink url={watch("website_url")} />}>
+          <Input {...register("website_url")} type="url" />
+        </Field>
         <Field label="예약 링크"><Input {...register("booking_url")} type="url" /></Field>
       </section>
 
@@ -347,6 +349,26 @@ function Field({
       </div>
       {children}
     </div>
+  );
+}
+
+/** 웹사이트 바로가기 — 값이 없거나 URL 형식이 아니면 렌더링하지 않음 */
+function OpenLink({ url }: { url: string }) {
+  if (!url.trim()) return null;
+  try {
+    new URL(url);
+  } catch {
+    return null;
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-xs text-blue-600 hover:underline"
+    >
+      열기 ↗
+    </a>
   );
 }
 
