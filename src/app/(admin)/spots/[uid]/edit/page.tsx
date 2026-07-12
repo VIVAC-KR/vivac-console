@@ -64,7 +64,15 @@ async function saveSpot(
   );
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    return `저장 실패 (${res.status}) ${body}`.trim();
+    // FastAPI HTTPException은 {"detail": "..."} JSON으로 옴 — 사람이 읽을 메시지만 뽑아 표시
+    let message = body;
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed.detail === "string") message = parsed.detail;
+    } catch {
+      // 텍스트 그대로 표시
+    }
+    return `저장 실패 (${res.status}) ${message}`.trim();
   }
   return null;
 }
