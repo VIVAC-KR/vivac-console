@@ -109,7 +109,13 @@ export function SpotEditForm({
   const pendingStatusRef = useRef<"CURATED" | "REJECTED" | null>(null);
   const isReviewQueueItem = spot.pipeline_status === "ENRICHED";
 
-  const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
     defaultValues: {
       title: spot.title,
       address: spot.address ?? "",
@@ -230,7 +236,16 @@ export function SpotEditForm({
           label="전화번호"
           extra={<SearchLink q={[watch("title"), watch("phone")].filter(Boolean).join(" ")} />}
         >
-          <Input {...register("phone")} />
+          <Input
+            {...register("phone", {
+              validate: (v) =>
+                !v || /^[0-9-]+$/.test(v) || "숫자와 하이픈(-)만 입력 가능합니다",
+            })}
+            aria-invalid={!!errors.phone}
+          />
+          {errors.phone && (
+            <p className="text-xs text-destructive">{errors.phone.message}</p>
+          )}
         </Field>
         <Field label="웹사이트" extra={<OpenLink url={watch("website_url")} />}>
           <Input {...register("website_url")} type="url" />
