@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { MapPin, Building2, AlertTriangle } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { MapPin, Building2, AlertTriangle, ClipboardCheck } from "lucide-react";
+import { apiFetch, apiList } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type CountItem = { key: string; count: number };
@@ -13,14 +13,21 @@ type SpotStats = {
 };
 
 export default async function DashboardPage() {
-  const stats = await apiFetch<SpotStats>("/internal/spots/stats");
+  const [stats, enrichedQueue] = await Promise.all([
+    apiFetch<SpotStats>("/internal/spots/stats"),
+    apiList<{ uid: string }>("/internal/spots", {
+      pipeline_status: "ENRICHED",
+      _start: 0,
+      _end: 1,
+    }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">대시보드</h1>
 
       {/* 요약 카드 */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <StatCard
           label="총 스팟"
           value={stats.total}
@@ -43,6 +50,13 @@ export default async function DashboardPage() {
               ? `${((stats.missing_coordinates / stats.total) * 100).toFixed(1)}%`
               : undefined
           }
+        />
+        <StatCard
+          label="검증 대기"
+          value={enrichedQueue.total}
+          icon={ClipboardCheck}
+          tint="bg-orange-500/10 text-orange-600 dark:text-orange-400"
+          href="/spots?pipeline_status=ENRICHED"
         />
       </div>
 
@@ -71,14 +85,16 @@ function StatCard({
   icon: Icon,
   tint,
   hint,
+  href,
 }: {
   label: string;
   value: number;
   icon: typeof MapPin;
   tint: string;
   hint?: string;
+  href?: string;
 }) {
-  return (
+  const content = (
     <div className="flex items-center gap-4 rounded-xl border p-4">
       <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-lg", tint)}>
         <Icon className="size-5" />
@@ -91,6 +107,13 @@ function StatCard({
         </p>
       </div>
     </div>
+  );
+  return href ? (
+    <Link href={href} className="transition-opacity hover:opacity-80">
+      {content}
+    </Link>
+  ) : (
+    content
   );
 }
 
