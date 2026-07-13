@@ -8,34 +8,43 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/admin/theme-toggle";
 
-// 그룹별 네비게이션 (섹션 헤더로 스팟/기타 데이터 분리)
-const NAV_GROUPS: { title?: string; items: { href: string; label: string }[] }[] = [
-  { items: [{ href: "/dashboard", label: "대시보드" }] },
-  {
-    title: "스팟",
-    items: [
-      { href: "/spots", label: "Spots" },
-      { href: "/spots?pipeline_status=ENRICHED", label: "검증 대기" },
-    ],
-  },
-  {
-    title: "기타 데이터",
-    items: [{ href: "/spot-business-info", label: "Business Info" }],
-  },
-];
-
 export function AdminShell({
   email,
+  userId,
   signOutAction,
   children,
 }: {
   email?: string | null;
+  userId?: string | null;
   signOutAction: () => Promise<void>;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [deskCollapsed, setDeskCollapsed] = useState(false);
   const pathname = usePathname();
+
+  // 그룹별 네비게이션 — "Browse"(전체 열람)와 "My Queue"(내게 할당된 검증 대기)를 명확히 분리
+  const NAV_GROUPS: { title?: string; items: { href: string; label: string }[] }[] = [
+    { items: [{ href: "/dashboard", label: "Dashboard" }] },
+    {
+      title: "Browse",
+      items: [
+        { href: "/spots", label: "Spots" },
+        { href: "/spot-business-info", label: "Business Info" },
+      ],
+    },
+    {
+      title: "My Queue",
+      items: userId
+        ? [
+            {
+              href: `/spots?pipeline_status=ENRICHED&assigned_to_uid=${userId}`,
+              label: "Pending Review",
+            },
+          ]
+        : [],
+    },
+  ];
 
   return (
     <div className="flex min-h-screen">

@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { MapPin, Building2, AlertTriangle, ClipboardCheck } from "lucide-react";
+import {
+  MapPin,
+  Building2,
+  AlertTriangle,
+  ClipboardCheck,
+  ListTodo,
+  CheckCircle2,
+} from "lucide-react";
+import { auth } from "@/auth";
 import { apiFetch, apiList } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +18,12 @@ type SpotStats = {
   missing_coordinates: number;
   by_source: CountItem[];
   by_region_province: CountItem[];
+  my_assigned_total: number;
+  my_completed: number;
 };
 
 export default async function DashboardPage() {
+  const session = await auth();
   const [stats, enrichedQueue] = await Promise.all([
     apiFetch<SpotStats>("/internal/spots/stats"),
     apiList<{ uid: string }>("/internal/spots", {
@@ -21,55 +32,103 @@ export default async function DashboardPage() {
       _end: 1,
     }),
   ]);
+  const myPending = stats.my_assigned_total - stats.my_completed;
+  const myCompletionRate =
+    stats.my_assigned_total > 0
+      ? `${((stats.my_completed / stats.my_assigned_total) * 100).toFixed(1)}%`
+      : undefined;
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">대시보드</h1>
+      <h1 className="text-xl font-semibold">Dashboard</h1>
 
-      {/* 요약 카드 */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <StatCard
-          label="총 스팟"
-          value={stats.total}
-          icon={MapPin}
-          tint="bg-blue-500/10 text-blue-600 dark:text-blue-400"
-        />
-        <StatCard
-          label="사업정보"
-          value={stats.business_info_total}
-          icon={Building2}
-          tint="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-        />
-        <StatCard
-          label="좌표 누락"
-          value={stats.missing_coordinates}
-          icon={AlertTriangle}
-          tint="bg-amber-500/10 text-amber-600 dark:text-amber-400"
-          hint={
-            stats.total > 0
-              ? `${((stats.missing_coordinates / stats.total) * 100).toFixed(1)}%`
-              : undefined
-          }
-        />
-        <StatCard
-          label="검증 대기"
-          value={enrichedQueue.total}
-          icon={ClipboardCheck}
-          tint="bg-orange-500/10 text-orange-600 dark:text-orange-400"
-          href="/spots?pipeline_status=ENRICHED"
-        />
-      </div>
+      {/* Browse — 전체 데이터 요약 */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+          Browse
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <StatCard
+            label="Total Spots"
+            value={stats.total}
+            icon={MapPin}
+            tint="bg-blue-500/10 text-blue-600 dark:text-blue-400"
+          />
+          <StatCard
+            label="Business Info"
+            value={stats.business_info_total}
+            icon={Building2}
+            tint="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <StatCard
+            label="Missing Coordinates"
+            value={stats.missing_coordinates}
+            icon={AlertTriangle}
+            tint="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            hint={
+              stats.total > 0
+                ? `${((stats.missing_coordinates / stats.total) * 100).toFixed(1)}%`
+                : undefined
+            }
+          />
+          <StatCard
+            label="Pending Review (All)"
+            value={enrichedQueue.total}
+            icon={ClipboardCheck}
+            tint="bg-orange-500/10 text-orange-600 dark:text-orange-400"
+            href="/spots?pipeline_status=ENRICHED"
+          />
+        </div>
+      </section>
+
+      {/* My Queue — 내게 할당된 데이터 진행률 */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+          My Queue
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            label="Assigned to Me"
+            value={stats.my_assigned_total}
+            icon={ListTodo}
+            tint="bg-sky-500/10 text-sky-600 dark:text-sky-400"
+            href={
+              session?.user?.id
+                ? `/spots?assigned_to_uid=${session.user.id}`
+                : undefined
+            }
+          />
+          <StatCard
+            label="Completed"
+            value={stats.my_completed}
+            icon={CheckCircle2}
+            tint="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            hint={myCompletionRate}
+          />
+          <StatCard
+            label="Pending Review (Mine)"
+            value={myPending}
+            icon={ClipboardCheck}
+            tint="bg-orange-500/10 text-orange-600 dark:text-orange-400"
+            href={
+              session?.user?.id
+                ? `/spots?pipeline_status=ENRICHED&assigned_to_uid=${session.user.id}`
+                : undefined
+            }
+          />
+        </div>
+      </section>
 
       {/* 분포 */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Breakdown
-          title="소스별"
+          title="By Source"
           items={stats.by_source}
           barClass="bg-violet-500"
           hrefFor={(k) => `/spots?source=${encodeURIComponent(k)}`}
         />
         <Breakdown
-          title="도/광역시별"
+          title="By Region"
           items={stats.by_region_province}
           barClass="bg-blue-500"
           hrefFor={(k) => `/spots?region_province=${encodeURIComponent(k)}`}
