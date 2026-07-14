@@ -1,7 +1,10 @@
 import { getAccessToken } from "@/auth";
 
-const BASE = process.env.API_BASE_URL;
-if (!BASE) throw new Error("API_BASE_URL is not set");
+function getBase(): string {
+  const base = process.env.API_BASE_URL;
+  if (!base) throw new Error("API_BASE_URL is not set");
+  return base;
+}
 
 /** status를 담은 API 에러 — 호출부가 404 vs 그 외를 구분할 수 있게 한다. */
 export class ApiError extends Error {
@@ -22,7 +25,7 @@ export async function apiFetch<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${getBase()}${path}`, {
     ...init,
     headers: { ...(await authHeaders()), ...init?.headers },
     cache: "no-store",
@@ -44,7 +47,7 @@ export async function apiList<T>(
     if (v !== undefined && v !== "") q.set(k, String(v));
   }
   const headers = await authHeaders();
-  const res = await fetch(`${BASE}${path}?${q}`, { headers, cache: "no-store" });
+  const res = await fetch(`${getBase()}${path}?${q}`, { headers, cache: "no-store" });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new ApiError(res.status, `API ${res.status}: ${body}`);
@@ -79,7 +82,7 @@ export async function apiMutate(
   path: string,
   data: Record<string, unknown>
 ): Promise<string | null> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${getBase()}${path}`, {
     method: "PATCH",
     headers: await authHeaders(),
     body: JSON.stringify(data),
