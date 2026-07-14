@@ -67,3 +67,54 @@ export type BusinessInfoDetail = {
   created_at: string | null;
   updated_at: string | null;
 };
+
+export type SpotGroupVisibility = "private" | "invite_only" | "public";
+
+export const SPOT_GROUP_VISIBILITIES: SpotGroupVisibility[] = [
+  "private",
+  "invite_only",
+  "public",
+];
+
+export type SpotGroupRole = "viewer" | "contributor" | "editor" | "owner";
+
+export const SPOT_GROUP_ROLES: SpotGroupRole[] = [
+  "viewer",
+  "contributor",
+  "editor",
+  "owner",
+];
+
+export type SpotGroupAdminListItem = {
+  uid: string;
+  name: string;
+  visibility: SpotGroupVisibility;
+  member_count: number;
+  spot_count: number;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type SpotGroupAdminDetail = SpotGroupAdminListItem & {
+  description: string | null;
+};
+
+export type SpotGroupAdminMemberOut = {
+  user_uid: string;
+  nickname: string;
+  email: string;
+  role: SpotGroupRole;
+  invited_by_uid: string | null;
+  created_at: string | null;
+};
+
+export type SpotGroupSpotItem = {
+  uid: string;
+  title: string;
+  trust_tier: number | null;
+  thumbnail_url: string | null;
+  region_short: string | null;
+  category: string[] | null;
+  added_by_uid: string;
+  added_at: string | null;
+};

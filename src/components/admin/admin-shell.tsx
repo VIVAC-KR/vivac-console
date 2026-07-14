@@ -13,6 +13,7 @@ import {
   MapPin,
   Building2,
   Tags,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ export function AdminShell({
       items: [
         { href: "/spots", label: "Spots", icon: MapPin },
         { href: "/spot-business-info", label: "Business Info", icon: Building2 },
+        { href: "/spot-groups", label: "Spot Groups", icon: Users },
       ],
     },
     {
