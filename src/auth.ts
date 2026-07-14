@@ -37,8 +37,9 @@ type BackendAuthResponse = {
 /** JWT의 exp(초)를 밀리초로 반환. 검증 없이 payload만 디코드한다. */
 function backendTokenExpiry(jwt: string): number {
   try {
-    const b64 = jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(b64));
+    const payload = JSON.parse(
+      Buffer.from(jwt.split(".")[1], "base64url").toString()
+    );
     return typeof payload.exp === "number" ? payload.exp * 1000 : 0;
   } catch {
     return 0;
