@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
-import { getAccessToken } from "@/auth";
+import { apiFetch, apiMutate, ApiError } from "@/lib/api";
 import { SbiEditForm } from "@/components/admin/sbi-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 
@@ -29,23 +28,7 @@ async function saveBusinessInfo(
   data: Record<string, unknown>
 ): Promise<string | null> {
   "use server";
-  const token = await getAccessToken();
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/internal/spot-business-info/${uid}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token ?? ""}`,
-      },
-      body: JSON.stringify(data),
-    }
-  );
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    return `저장 실패 (${res.status}) ${body}`.trim();
-  }
-  return null;
+  return apiMutate(`/internal/spot-business-info/${uid}`, data);
 }
 
 export default async function BusinessInfoEditPage({
@@ -58,8 +41,9 @@ export default async function BusinessInfoEditPage({
   let info: BusinessInfoDetail;
   try {
     info = await apiFetch<BusinessInfoDetail>(`/internal/spot-business-info/${uid}`);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) notFound();
+    throw err;
   }
 
   // 수정 기록 — business_info 레코드 uid로 조회 (실패해도 편집 화면 유지)

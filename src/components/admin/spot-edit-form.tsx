@@ -201,7 +201,12 @@ export function SpotEditForm({
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
+    <form
+      onSubmit={handleSubmit(onSubmit, () => {
+        pendingStatusRef.current = null;
+      })}
+      className="flex flex-col gap-6 max-w-2xl"
+    >
       {spot.pipeline_status && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-zinc-500">파이프라인 상태</span>

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, apiList } from "@/lib/api";
-import { getAccessToken } from "@/auth";
+import { apiFetch, apiList, apiMutate, ApiError } from "@/lib/api";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 
@@ -50,31 +49,7 @@ async function saveSpot(
   data: Record<string, unknown>
 ): Promise<string | null> {
   "use server";
-  const token = await getAccessToken();
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/internal/spots/${uid}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token ?? ""}`,
-      },
-      body: JSON.stringify(data),
-    }
-  );
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    // FastAPI HTTPException은 {"detail": "..."} JSON으로 옴 — 사람이 읽을 메시지만 뽑아 표시
-    let message = body;
-    try {
-      const parsed = JSON.parse(body);
-      if (typeof parsed.detail === "string") message = parsed.detail;
-    } catch {
-      // 텍스트 그대로 표시
-    }
-    return `저장 실패 (${res.status}) ${message}`.trim();
-  }
-  return null;
+  return apiMutate(`/internal/spots/${uid}`, data);
 }
 
 export default async function SpotEditPage({
@@ -87,8 +62,9 @@ export default async function SpotEditPage({
   let spot: SpotDetail;
   try {
     spot = await apiFetch<SpotDetail>(`/internal/spots/${uid}`);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) notFound();
+    throw err;
   }
 
   // 이 스팟의 사업정보 (보통 1건). 1건이면 상세로 직행, 여러 건이면 필터 목록으로.

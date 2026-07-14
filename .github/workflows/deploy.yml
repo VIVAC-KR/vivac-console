@@ -63,7 +63,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/vivac-console
-            cat > .env <<EOF
+            cat > .env <<'EOF'
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
             AUTH_GOOGLE_ID=${{ secrets.AUTH_GOOGLE_ID }}
             AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
@@ -71,6 +71,7 @@ jobs:
             AUTH_TRUST_HOST=true
             NEXT_PUBLIC_API_BASE_URL=http://api:8000/v1
             EOF
+            chmod 600 .env
             docker compose pull
             docker compose down
             docker compose up -d

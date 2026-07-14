@@ -52,15 +52,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (account?.provider !== "google" || !account.id_token) return false;
 
-      const res = await fetch(`${API_BASE_URL}/admin/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_token: account.id_token }),
-      });
-
-      if (!res.ok) return false;
-
-      const data = (await res.json()) as BackendAuthResponse;
+      let data: BackendAuthResponse;
+      try {
+        const res = await fetch(`${API_BASE_URL}/admin/auth/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id_token: account.id_token }),
+        });
+        if (!res.ok) return false;
+        data = (await res.json()) as BackendAuthResponse;
+      } catch {
+        return false;
+      }
       if (!data.user?.is_staff) return false;
 
       Object.assign(user, {
