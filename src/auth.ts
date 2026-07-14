@@ -22,7 +22,7 @@ declare module "next-auth/jwt" {
   }
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = process.env.API_BASE_URL;
 
 type BackendAuthResponse = {
   access_token: string;

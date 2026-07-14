@@ -9,40 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TagsInput } from "@/components/admin/tags-input";
-
-// 배열 필드는 쉼표 구분 문자열로 표시
-type SpotDetail = {
-  uid: string;
-  title: string;
-  pipeline_status: string | null;
-  address: string | null;
-  address_detail: string | null;
-  region_province: string | null;
-  region_city: string | null;
-  postal_code: string | null;
-  phone: string | null;
-  description: string | null;
-  tagline: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  altitude: number | null;
-  unit_count: number | null;
-  is_fee_required: boolean | null;
-  is_pet_allowed: boolean | null;
-  pet_policy: string | null;
-  has_equipment_rental: string[] | null;
-  themes: string[] | null;
-  fire_pit_type: string | null;
-  amenities: string[] | null;
-  nearby_facilities: string[] | null;
-  camp_sight_type: string | null;
-  website_url: string | null;
-  booking_url: string | null;
-  features: string | null;
-  category: string[] | null;
-  total_area_m2: number | null;
-  has_liability_insurance: boolean | null;
-};
+import type { SpotDetail } from "@/lib/types";
 
 type FormValues = {
   title: string;
@@ -160,7 +127,7 @@ export function SpotEditForm({
         region_province: values.region_province || null,
         region_city: values.region_city || null,
         postal_code: values.postal_code || null,
-        phone: values.phone || null,
+        phone: values.phone.trim() || null,
         description: values.description || null,
         tagline: values.tagline || null,
         latitude: parseNum(values.latitude),
@@ -243,8 +210,10 @@ export function SpotEditForm({
         >
           <Input
             {...register("phone", {
-              validate: (v) =>
-                !v || /^[0-9-]+$/.test(v) || "숫자와 하이픈(-)만 입력 가능합니다",
+              validate: (v) => {
+                const t = v.trim();
+                return !t || /^\d[\d-]*\d$/.test(t) || "숫자와 하이픈(-)만 입력 가능합니다";
+              },
             })}
             aria-invalid={!!errors.phone}
           />

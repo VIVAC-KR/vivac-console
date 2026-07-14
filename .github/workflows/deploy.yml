@@ -6,6 +6,13 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -69,10 +76,10 @@ jobs:
             AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
             AUTH_URL=https://console.vivac.app
             AUTH_TRUST_HOST=true
-            NEXT_PUBLIC_API_BASE_URL=http://api:8000/v1
+            API_BASE_URL=http://api:8000/v1
             EOF
             chmod 600 .env
+            export DOCKER_IMAGE=${{ vars.DOCKER_IMAGE }}:${{ github.sha }}
             docker compose pull
-            docker compose down
             docker compose up -d
             docker image prune -f

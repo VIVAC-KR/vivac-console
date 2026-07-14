@@ -1,26 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, apiMutate, ApiError } from "@/lib/api";
+import type { BusinessInfoDetail } from "@/lib/types";
 import { SbiEditForm } from "@/components/admin/sbi-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
-
-type BusinessInfoDetail = {
-  uid: string;
-  spot_uid: string;
-  business_reg_no: string | null;
-  tourism_business_reg_no: string | null;
-  business_type: string | null;
-  operation_type: string | null;
-  operating_agency: string | null;
-  operating_status: string | null;
-  national_park_no: number | null;
-  national_park_office_code: string | null;
-  national_park_serial_no: string | null;
-  national_park_category_code: string | null;
-  licensed_at: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
 
 /** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
 async function saveBusinessInfo(
@@ -28,7 +11,7 @@ async function saveBusinessInfo(
   data: Record<string, unknown>
 ): Promise<string | null> {
   "use server";
-  return apiMutate(`/internal/spot-business-info/${uid}`, data);
+  return apiMutate(`/internal/spot-business-info/${encodeURIComponent(uid)}`, data);
 }
 
 export default async function BusinessInfoEditPage({
@@ -37,10 +20,11 @@ export default async function BusinessInfoEditPage({
   params: Promise<{ uid: string }>;
 }) {
   const { uid } = await params;
+  const encodedUid = encodeURIComponent(uid);
 
   let info: BusinessInfoDetail;
   try {
-    info = await apiFetch<BusinessInfoDetail>(`/internal/spot-business-info/${uid}`);
+    info = await apiFetch<BusinessInfoDetail>(`/internal/spot-business-info/${encodedUid}`);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
@@ -48,7 +32,7 @@ export default async function BusinessInfoEditPage({
 
   // 수정 기록 — business_info 레코드 uid로 조회 (실패해도 편집 화면 유지)
   const history = await apiFetch<HistoryEntry[]>(
-    `/internal/spot-business-info/${uid}/history`
+    `/internal/spot-business-info/${encodedUid}/history`
   ).catch(() => null);
 
   return (

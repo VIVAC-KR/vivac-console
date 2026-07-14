@@ -6,22 +6,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-type BusinessInfoDetail = {
-  uid: string;
-  spot_uid: string;
-  business_reg_no: string | null;
-  tourism_business_reg_no: string | null;
-  business_type: string | null;
-  operation_type: string | null;
-  operating_agency: string | null;
-  operating_status: string | null;
-  national_park_no: number | null;
-  national_park_office_code: string | null;
-  national_park_serial_no: string | null;
-  national_park_category_code: string | null;
-  licensed_at: string | null;
-};
+import type { BusinessInfoDetail } from "@/lib/types";
 
 type FormValues = {
   business_reg_no: string;

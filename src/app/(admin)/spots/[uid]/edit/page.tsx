@@ -1,47 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, apiList, apiMutate, ApiError } from "@/lib/api";
+import type { SpotDetail } from "@/lib/types";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
-
-type SpotDetail = {
-  uid: string;
-  title: string;
-  pipeline_status: string | null;
-  source: string | null;
-  external_id: string | null;
-  address: string | null;
-  address_detail: string | null;
-  region_province: string | null;
-  region_city: string | null;
-  postal_code: string | null;
-  phone: string | null;
-  description: string | null;
-  tagline: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  altitude: number | null;
-  unit_count: number | null;
-  is_fee_required: boolean | null;
-  is_pet_allowed: boolean | null;
-  pet_policy: string | null;
-  has_equipment_rental: string[] | null;
-  themes: string[] | null;
-  fire_pit_type: string | null;
-  amenities: string[] | null;
-  nearby_facilities: string[] | null;
-  camp_sight_type: string | null;
-  rating_avg: number;
-  review_count: number;
-  website_url: string | null;
-  booking_url: string | null;
-  features: string | null;
-  category: string[] | null;
-  total_area_m2: number | null;
-  has_liability_insurance: boolean | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
 
 /** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
 async function saveSpot(
@@ -49,7 +11,7 @@ async function saveSpot(
   data: Record<string, unknown>
 ): Promise<string | null> {
   "use server";
-  return apiMutate(`/internal/spots/${uid}`, data);
+  return apiMutate(`/internal/spots/${encodeURIComponent(uid)}`, data);
 }
 
 export default async function SpotEditPage({
@@ -58,29 +20,32 @@ export default async function SpotEditPage({
   params: Promise<{ uid: string }>;
 }) {
   const { uid } = await params;
+  const encodedUid = encodeURIComponent(uid);
 
   let spot: SpotDetail;
   try {
-    spot = await apiFetch<SpotDetail>(`/internal/spots/${uid}`);
+    spot = await apiFetch<SpotDetail>(`/internal/spots/${encodedUid}`);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
 
   // 이 스팟의 사업정보 (보통 1건). 1건이면 상세로 직행, 여러 건이면 필터 목록으로.
-  const { data: biList, total: biTotal } = await apiList<{ uid: string }>(
-    "/internal/spot-business-info",
-    { spot_uid: uid, _start: 0, _end: 1 }
-  );
+  // 수정 기록 — 실패해도 편집 화면은 유지 (편집이 우선)
+  const [{ data: biList, total: biTotal }, history] = await Promise.all([
+    apiList<{ uid: string }>("/internal/spot-business-info", {
+      spot_uid: uid,
+      _start: 0,
+      _end: 1,
+    }),
+    apiFetch<HistoryEntry[]>(`/internal/spots/${encodedUid}/history`).catch(
+      () => null
+    ),
+  ]);
   const businessInfoHref =
-    biTotal === 1
+    biTotal === 1 && biList[0]
       ? `/spot-business-info/${biList[0].uid}/edit`
       : `/spot-business-info?spot_uid=${uid}`;
-
-  // 수정 기록 — 실패해도 편집 화면은 유지 (편집이 우선)
-  const history = await apiFetch<HistoryEntry[]>(
-    `/internal/spots/${uid}/history`
-  ).catch(() => null);
 
   return (
     <div className="flex flex-col gap-6">

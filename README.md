@@ -9,13 +9,13 @@ VIVAC 내부 운영팀이 사용하는 **운영 콘솔(Operations Console)** 입
 ## 어떻게 동작하나요
 
 - 백엔드(`vivacapi-core`)와 **완전히 분리된 별도 리포**입니다.
-- 같은 PostgreSQL을 바라보지만 **DB에 직접 붙지 않고**, 항상 `vivacapi-core`의 어드민 전용 HTTP API(`/v1/admin/*`)를 호출합니다.
+- 같은 PostgreSQL을 바라보지만 **DB에 직접 붙지 않고**, 항상 `vivacapi-core`의 어드민 전용 HTTP API(`/v1/internal/*`, 로그인은 `/admin/auth/google`)를 호출합니다.
 - 즉 모든 검증·정합성 로직은 백엔드 한 곳에서만 일어납니다. 콘솔은 "화면" 역할만 합니다.
 
 ```
 ┌──────────────────┐   HTTPS / Bearer JWT   ┌────────────────────┐
 │  vivac-console   │  ───────────────────>  │   vivacapi-core    │ ──> PostgreSQL
-│  (Next.js, 이 리포)│                        │   /v1/admin/*       │
+│  (Next.js, 이 리포)│                        │   /v1/internal/*    │
 └──────────────────┘                        └────────────────────┘
 ```
 

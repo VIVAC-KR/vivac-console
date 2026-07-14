@@ -1,6 +1,7 @@
 import { getAccessToken } from "@/auth";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
+const BASE = process.env.API_BASE_URL;
+if (!BASE) throw new Error("API_BASE_URL is not set");
 
 /** status를 담은 API 에러 — 호출부가 404 vs 그 외를 구분할 수 있게 한다. */
 export class ApiError extends Error {

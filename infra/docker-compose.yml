@@ -1,6 +1,6 @@
 services:
   console:
-    image: vivacadmin/vivac-console:latest
+    image: ${DOCKER_IMAGE}
     restart: always
     expose:
       - "3000"

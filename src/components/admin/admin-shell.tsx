@@ -99,7 +99,7 @@ export function AdminShell({
                 </p>
               )}
               {group.items.map((item) => {
-                const active = pathname.startsWith(item.href);
+                const active = pathname.startsWith(item.href.split("?")[0]);
                 return (
                   <Link
                     key={item.href}

@@ -79,49 +79,45 @@
 
 ## 🟡 Tier 3 — 정리 / 철거 / hardening
 
-### [열림] 🟡 중복 type 정의 — `SpotDetail` × 2, `BusinessInfoDetail` × 2
+### [완료] 🟡 중복 type 정의 — `SpotDetail` × 2, `BusinessInfoDetail` × 2
 - 위치: `spots/[uid]/edit/page.tsx:8-45` vs `spot-edit-form.tsx:14-45` (sbi 동일 패턴)
-- 현재 상태: 33개 필드 type이 두 벌 — 필드 추가 시 한쪽만 고치면 조용히 어긋남. 아직 사고는 없음.
-- 제안: form이 page에서 type import (장기적으로는 FastAPI openapi.json에서 생성).
+- 처리: `src/lib/types.ts` 신설, `SpotDetail`/`BusinessInfoDetail` 각 한 벌로 통합. 4개 파일(두 edit page + 두 form)이 `import type`으로 참조. (FastAPI openapi.json 생성은 장기 과제로 보류)
 
-### [열림] 🟡 `NEXT_PUBLIC_API_BASE_URL` — server 전용인데 public prefix
-- 위치: `src/lib/api.ts:3`, `src/auth.ts:25`, 두 server action, `deploy.yml:72`
-- 현재 상태: Docker build에 env가 없어 client bundle에는 `undefined`가 inline되고 서버는 runtime env로 동작 — **우연히 안전**. build-time env를 넣는 순간 internal URL이 bundle에 박힘.
-- 제안: `API_BASE_URL`로 rename + 기동 시 미설정이면 fail-fast (`!` assertion 제거).
+### [완료] 🟡 `NEXT_PUBLIC_API_BASE_URL` — server 전용인데 public prefix
+- 위치: `src/lib/api.ts:3`, `src/auth.ts:25`, `deploy.yml:72`, `.env.example`
+- 처리: `API_BASE_URL`로 rename, `api.ts`는 미설정 시 모듈 로드 시점에 throw(fail-fast)로 변경. `.env.local`(gitignore, 로컬 전용)도 함께 갱신 안 하면 로컬 build가 즉시 깨지는 걸 build 검증 중 실제로 확인·수정.
 
-### [열림] 🟡 배포가 `:latest` 고정 — SHA pin/rollback 불가 + down→up downtime
-- 위치: `infra/docker-compose.yml:3`, `deploy.yml:74-77`
-- 현재 상태: workflow는 SHA tag도 push하지만 compose는 항상 `:latest` pull — rollback 수단 없음. `docker compose down` 후 `up`이라 불필요한 중단 window. 내부 콘솔이라 치명적이진 않음.
-- 제안: compose image를 `${IMAGE_TAG}` env로 받아 SHA pin, `down` 제거하고 `up -d`(recreate)만.
+### [완료] 🟡 배포가 `:latest` 고정 — SHA pin/rollback 불가 + down→up downtime
+- 위치: `infra/docker-compose.yml:3`, `deploy.yml:74-78`
+- 처리: compose image를 `${DOCKER_IMAGE}` 변수로, deploy 스크립트가 `export DOCKER_IMAGE=<repo>:${{ github.sha }}`로 pin. `docker compose down` 제거하고 `pull` + `up -d`만 (recreate로 충분).
 
-### [열림] 🟡 dead config `ALLOWED_EMAIL_DOMAIN`
+### [완료] 🟡 dead config `ALLOWED_EMAIL_DOMAIN`
 - 위치: `.env.example:13`
-- 현재 상태: 코드 어디서도 참조 안 함(grep 0건). 존재하지 않는 통제를 암시 — README의 "회사 계정만 로그인" 서술과 함께 오해 유발. 실제 gate는 backend `is_staff` 단독(정상 동작).
-- 제안: 삭제. (원하면 Google provider `hd` param을 defense-in-depth로 추가)
+- 처리: 삭제. (Google provider `hd` param 추가는 별도 defense-in-depth 판단이 필요해 보류)
 
-### [열림] 🟡 문서 drift — README/CLAUDE.md `/v1/admin/*` vs 실제 `/v1/internal/*`
-- 위치: `README.md:12,18`, root `CLAUDE.md`
-- 현재 상태: 코드는 auth만 `/admin/auth/google`, 데이터는 전부 `/internal/*` 호출. repo 간 contract 문서가 거짓말 중 — 신규 작업자·agent가 잘못된 경로로 작업 시작할 위험.
-- 제안: 실제 경로로 문서 정정.
+### [완료] 🟡 문서 drift — README `/v1/admin/*` vs 실제 `/v1/internal/*`
+- 위치: `README.md:12,18`
+- 처리: 실제 경로(`/v1/internal/*`, 로그인은 `/admin/auth/google`)로 정정. 상위 workspace `vivac/CLAUDE.md`는 이 repo git 범위 밖(별도 관리 파일)이라 손대지 않음 — 별도로 정정 필요.
 
-### [열림] 🟡 자잘한 correctness 묶음 (한 PR 감)
-- `spots/page.tsx:47` — `page=abc` → `NaN`이 `_start`로 전달. `parseInt(...) || 1`. (sbi page 동일)
-- `admin-shell.tsx:102` — `pathname.startsWith(href)`가 querystring 포함 href와 절대 매치 안 됨 → My Queue nav active 표시 불가. pathname 부분만 비교.
-- `spots/[uid]/edit/page.tsx:95-107` — biList/history 순차 await(waterfall) + `biList[0].uid` unguarded. `Promise.all` + `?.`.
-- `spot-edit-form.tsx:242` — phone regex `/^[0-9-]+$/`가 `---` 허용, 공백 미trim. `/^\d[\d-]*\d$/` + trim.
-- `api.ts:40` — `apiList` 에러 시 body 버림 (`apiFetch`와 불일치). body 포함.
-- `spots/[uid]/edit/page.tsx:55,89` — `uid` 미encoding URL interpolation. `encodeURIComponent`.
+### [완료] 🟡 자잘한 correctness 묶음
+- `spots/page.tsx` + `spot-business-info/page.tsx` — `Number(page)` → `parseInt(page, 10) || 1`로 NaN 방지 (양쪽 페이지 모두 적용).
+- `admin-shell.tsx:102` — `pathname.startsWith(item.href.split("?")[0])`로 querystring 제외하고 비교, My Queue nav active 표시 정상화.
+- `spots/[uid]/edit/page.tsx` — biList/history를 `Promise.all`로 병렬화 + `biList[0]?.uid` 가드.
+- `spot-edit-form.tsx` — phone validate를 `v.trim()` 후 `/^\d[\d-]*\d$/`로 검사, 저장 값도 trim.
+- `api.ts:40` — Tier 2에서 `ApiError`로 이미 body 포함 처리됨 (추가 조치 불요, 확인만).
+- `spots/[uid]/edit/page.tsx`, `spot-business-info/[uid]/edit/page.tsx` — uid 전체 사용처(`apiFetch`/`apiMutate`/history) `encodeURIComponent` 적용.
 
-### [열림] 🟡 hardening / 인지 항목 (당장 조치 불요)
-- `deploy.yml:9` — `permissions: contents: read` 없음 / `appleboy/*` action mutable tag pin / `concurrency` group 없음.
-- `src/proxy.ts:25` — matcher가 `.*\.svg|.*\.png` 경로 전체를 auth 제외 — 현재 해당 route 없어 무해, 향후 image route 생기면 무인증. 잠재.
-- `src/proxy.ts:20` — 미인증 redirect가 원래 URL 버림 (`callbackUrl` 없음). UX.
-- `package.json:18` — `next-auth 5.0.0-beta.31` prod 의존. stable 나오면 이동.
-- `package.json:22` — `shadcn` CLI가 runtime dependencies에. 삭제, 필요 시 `pnpm dlx`.
-- `Makefile` — pnpm script 4개 alias뿐. 취향껏 삭제 가능. CI에 lint/typecheck gate 없음이 더 실질적 공백.
-- `auth.config.ts:15` — 8h 세션 중 토큰 만료 시 저장 실패(401)로 작성 내용 유실 위험. 401 분기 안내 메시지 정도.
-- `layout.tsx:30-33` — Pretendard를 CDN에서 SRI 없이 로드. self-host 권장.
-- `spot-edit-form.tsx:151-185` — PATCH가 전체 필드 전송(last-writer-wins). 내부 콘솔 규모면 현행 유지 결정을 명시.
+### [진행중] 🟡 hardening / 인지 항목 (당장 조치 불요로 표시됐던 것 중 일부만 처리)
+- [완료] `deploy.yml` — `permissions: contents: read` + `concurrency: prod-deploy` 추가.
+- [완료] `package.json` — `shadcn`을 `dependencies`→`devDependencies`로 이동 (런타임에 안 쓰는 CLI), `pnpm-lock.yaml` 갱신.
+- [열림] `appleboy/*` action mutable tag pin — 정확한 commit SHA 확인이 필요해 이번 배치에서 보류 (잘못 pin하면 배포가 깨짐).
+- [열림] `src/proxy.ts:25` matcher (svg/png만 제외) — 잠재 이슈, 현재 해당 route 없어 무해.
+- [열림] `src/proxy.ts:20` callbackUrl 없음 — UX 개선, 로그인 페이지 쪽 처리도 같이 필요해 별도 작업으로 분리.
+- [열림] `package.json:18` next-auth beta 의존 — stable 릴리스 대기.
+- [열림] `Makefile` — 결함 아님, 취향 문제라 유지. CI lint/typecheck gate 부재가 진짜 공백이나 새 워크플로 추가는 별도 결정 필요.
+- [열림] `auth.config.ts:15` 8h 만료 UX — 별도 설계 필요.
+- [열림] `layout.tsx:30-33` Pretendard self-host — 폰트 파일 준비 등 별도 작업.
+- [열림] `spot-edit-form.tsx:151-185` PATCH 전체 필드 전송 — 의도된 트레이드오프로 확인, 코드 변경 불요.
 
 ## 권장 실행 순서
 1. **Tier 1 세 건 한 번에**: `assigned_to_uid` pass-through + `OpenLink` protocol 검사 + session에서 `accessToken` 제거 — 앞 둘은 각 몇 줄, 셋째는 반나절.

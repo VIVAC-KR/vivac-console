@@ -45,7 +45,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
   const q = sp.q;
   const assignedToUid = sp.assigned_to_uid;
   const saved = sp.saved;
-  const currentPage = Math.max(1, Number(sp.page ?? "1"));
+  const currentPage = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const start = (currentPage - 1) * PAGE_SIZE;
 
   // 각 패싯의 옵션(distinct) 병렬 로드 (실패해도 빈 목록으로 degrade)

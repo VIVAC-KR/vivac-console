@@ -36,7 +36,7 @@ export default async function BusinessInfoPage({
   searchParams: SearchParams;
 }) {
   const { page = "1", sort = "updated_at", order = "desc", spot_uid, saved } = await searchParams;
-  const currentPage = Math.max(1, Number(page));
+  const currentPage = Math.max(1, parseInt(page, 10) || 1);
   const start = (currentPage - 1) * PAGE_SIZE;
 
   const { data: items, total } = await apiList<BusinessInfoListItem>(
