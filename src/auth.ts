@@ -1,10 +1,10 @@
 import NextAuth, { type DefaultSession } from "next-auth";
-import type {} from "next-auth/jwt";
+import { getToken } from "next-auth/jwt";
+import { headers } from "next/headers";
 import authConfig from "@/auth.config";
 
 declare module "next-auth" {
   interface Session {
-    accessToken?: string;
     expired?: boolean;
     user: {
       id?: string;
@@ -73,3 +73,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * backend accessToken을 JWT 쿠키에서 직접 decode해서 반환한다.
+ * session()이 반환하는 값은 /api/auth/session으로 브라우저에 노출되므로
+ * accessToken은 session에 절대 넣지 않고 이 헬퍼로만 서버에서 읽는다.
+ */
+export async function getAccessToken(): Promise<string | undefined> {
+  const token = await getToken({
+    req: { headers: await headers() },
+    secret: process.env.AUTH_SECRET,
+    secureCookie: process.env.AUTH_URL?.startsWith("https://") ?? false,
+  });
+  return token?.accessToken;
+}

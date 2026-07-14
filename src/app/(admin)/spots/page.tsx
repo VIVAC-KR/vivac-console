@@ -43,6 +43,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
   const sort = sp.sort ?? "updated_at";
   const order = sp.order ?? "desc";
   const q = sp.q;
+  const assignedToUid = sp.assigned_to_uid;
   const saved = sp.saved;
   const currentPage = Math.max(1, Number(sp.page ?? "1"));
   const start = (currentPage - 1) * PAGE_SIZE;
@@ -64,16 +65,17 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
     _sort: sort,
     _order: order,
     title_like: q || undefined,
+    assigned_to_uid: assignedToUid,
     ...filterValues,
   });
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const hasActiveFilters = !!(q || Object.values(filterValues).some(Boolean));
+  const hasActiveFilters = !!(q || assignedToUid || Object.values(filterValues).some(Boolean));
 
   // 현재 정렬/검색/필터를 보존하며 링크 쿼리스트링 생성
   function buildQuery(overrides: Record<string, string>) {
     const params = new URLSearchParams();
-    const merged = { sort, order, q: q ?? "", ...filterValues, ...overrides };
+    const merged = { sort, order, q: q ?? "", assigned_to_uid: assignedToUid ?? "", ...filterValues, ...overrides };
     for (const [k, v] of Object.entries(merged)) if (v) params.set(k, String(v));
     const s = params.toString();
     return s ? `?${s}` : "";

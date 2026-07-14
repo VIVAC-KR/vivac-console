@@ -30,7 +30,6 @@ export default {
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken;
       session.user.id = token.userId ?? session.user.id;
       session.user.isStaff = token.isStaff;
       // 백엔드 토큰이 만료됐으면 세션도 만료로 표시 (proxy가 로그아웃 처리)

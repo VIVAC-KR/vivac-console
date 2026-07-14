@@ -371,7 +371,8 @@ function Field({
 function OpenLink({ url }: { url: string }) {
   if (!url.trim()) return null;
   try {
-    new URL(url);
+    const protocol = new URL(url).protocol;
+    if (protocol !== "http:" && protocol !== "https:") return null;
   } catch {
     return null;
   }

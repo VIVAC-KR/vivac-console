@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import { auth } from "@/auth";
+import { getAccessToken } from "@/auth";
 import { SbiEditForm } from "@/components/admin/sbi-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 
@@ -29,14 +29,14 @@ async function saveBusinessInfo(
   data: Record<string, unknown>
 ): Promise<string | null> {
   "use server";
-  const session = await auth();
+  const token = await getAccessToken();
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/internal/spot-business-info/${uid}`,
     {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.accessToken ?? ""}`,
+        Authorization: `Bearer ${token ?? ""}`,
       },
       body: JSON.stringify(data),
     }

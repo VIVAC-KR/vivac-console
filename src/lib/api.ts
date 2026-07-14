@@ -1,12 +1,12 @@
-import { auth } from "@/auth";
+import { getAccessToken } from "@/auth";
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 async function authHeaders() {
-  const session = await auth();
+  const token = await getAccessToken();
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${session?.accessToken ?? ""}`,
+    Authorization: `Bearer ${token ?? ""}`,
   };
 }
 
