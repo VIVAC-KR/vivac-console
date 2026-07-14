@@ -291,13 +291,15 @@ export function SpotEditForm({
       </section>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button
-          type="submit"
-          disabled={isPending}
-          onClick={() => (pendingStatusRef.current = null)}
-        >
-          {isPending ? "Saving…" : "Save"}
-        </Button>
+        {!isReviewQueueItem && (
+          <Button
+            type="submit"
+            disabled={isPending}
+            onClick={() => (pendingStatusRef.current = null)}
+          >
+            {isPending ? "Saving…" : "Save"}
+          </Button>
+        )}
         {isReviewQueueItem && (
           <>
             <Button
