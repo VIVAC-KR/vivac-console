@@ -40,6 +40,8 @@ jobs:
           tags: |
             ${{ vars.DOCKER_IMAGE }}:latest
             ${{ vars.DOCKER_IMAGE }}:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_KAKAO_JS_KEY=${{ vars.NEXT_PUBLIC_KAKAO_JS_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

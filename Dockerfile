@@ -12,6 +12,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+ARG NEXT_PUBLIC_KAKAO_JS_KEY
+ENV NEXT_PUBLIC_KAKAO_JS_KEY=$NEXT_PUBLIC_KAKAO_JS_KEY
 RUN pnpm build
 
 # ── Stage 2: production runner ───────────────────────────────────────────────
