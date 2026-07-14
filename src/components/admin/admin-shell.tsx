@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   MapPin,
   Building2,
+  Tags,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,10 @@ export function AdminShell({
         { href: "/spots", label: "Spots", icon: MapPin },
         { href: "/spot-business-info", label: "Business Info", icon: Building2 },
       ],
+    },
+    {
+      title: "Admin",
+      items: [{ href: "/categories", label: "Categories", icon: Tags }],
     },
   ];
 

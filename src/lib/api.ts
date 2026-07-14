@@ -91,3 +91,29 @@ export async function apiMutate(
   const body = await res.text().catch(() => "");
   return parseErrorBody(res.status, body);
 }
+
+/** POST — 생성 결과: 성공 시 null, 실패 시 사람이 읽을 에러 메시지 */
+export async function apiCreate(
+  path: string,
+  data: Record<string, unknown>
+): Promise<string | null> {
+  const res = await fetch(`${getBase()}${path}`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (res.ok) return null;
+  const body = await res.text().catch(() => "");
+  return parseErrorBody(res.status, body);
+}
+
+/** DELETE — 삭제 결과: 성공 시 null, 실패 시 사람이 읽을 에러 메시지 */
+export async function apiDelete(path: string): Promise<string | null> {
+  const res = await fetch(`${getBase()}${path}`, {
+    method: "DELETE",
+    headers: await authHeaders(),
+  });
+  if (res.ok) return null;
+  const body = await res.text().catch(() => "");
+  return parseErrorBody(res.status, body);
+}

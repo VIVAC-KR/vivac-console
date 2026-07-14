@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TagsInput } from "@/components/admin/tags-input";
-import type { SpotDetail } from "@/lib/types";
+import { CategorySelect } from "@/components/admin/category-select";
+import type { CategoryOption, SpotDetail } from "@/lib/types";
 
 type FormValues = {
   title: string;
@@ -37,7 +38,7 @@ type FormValues = {
   website_url: string;
   booking_url: string;
   features: string;
-  category: string;
+  category: string[];
   total_area_m2: string;
   has_liability_insurance: string;
 };
@@ -65,10 +66,12 @@ function parseNum(v: string): number | null {
 export function SpotEditForm({
   spot,
   currentUserId,
+  categoryOptions,
   onSave,
 }: {
   spot: SpotDetail;
   currentUserId?: string;
+  categoryOptions: CategoryOption[];
   onSave: (uid: string, data: Record<string, unknown>) => Promise<string | null>;
 }) {
   const router = useRouter();
@@ -113,7 +116,7 @@ export function SpotEditForm({
       website_url: spot.website_url ?? "",
       booking_url: spot.booking_url ?? "",
       features: spot.features ?? "",
-      category: arr(spot.category),
+      category: spot.category ?? [],
       total_area_m2: spot.total_area_m2?.toString() ?? "",
       has_liability_insurance: spot.has_liability_insurance?.toString() ?? "",
     },
@@ -150,7 +153,7 @@ export function SpotEditForm({
         website_url: values.website_url || null,
         booking_url: values.booking_url || null,
         features: values.features || null,
-        category: parseArr(values.category),
+        category: values.category.length ? values.category : null,
         total_area_m2: parseNum(values.total_area_m2),
         has_liability_insurance: parseBool(values.has_liability_insurance),
       });
@@ -164,8 +167,8 @@ export function SpotEditForm({
     });
   }
 
-  // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지)
-  const tagsField = (name: keyof FormValues) => ({
+  // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지) — category는 CategorySelect로 별도 처리
+  const tagsField = (name: Exclude<keyof FormValues, "category">) => ({
     value: parseArr(watch(name)) ?? [],
     onChange: (v: string[]) =>
       setValue(name, v.join(", "), { shouldDirty: true }),
@@ -202,7 +205,13 @@ export function SpotEditForm({
         </Field>
         <Field label="한줄설명"><Input {...register("tagline")} /></Field>
         <Field label="설명"><Textarea {...register("description")} rows={4} /></Field>
-        <Field label="카테고리"><TagsInput {...tagsField("category")} /></Field>
+        <Field label="카테고리">
+          <CategorySelect
+            value={watch("category")}
+            onChange={(v) => setValue("category", v, { shouldDirty: true })}
+            options={categoryOptions}
+          />
+        </Field>
         <Field label="태그"><TagsInput {...tagsField("themes")} /></Field>
       </section>
 

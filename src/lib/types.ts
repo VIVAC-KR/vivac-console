@@ -38,6 +38,11 @@ export type SpotDetail = {
   updated_at: string | null;
 };
 
+export type CategoryOption = {
+  code: string;
+  label_ko: string;
+};
+
 export type BusinessInfoDetail = {
   uid: string;
   spot_uid: string;
