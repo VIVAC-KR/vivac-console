@@ -3,7 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Menu,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen,
+  LayoutDashboard,
+  ClipboardCheck,
+  MapPin,
+  Building2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/admin/theme-toggle";
@@ -24,16 +33,12 @@ export function AdminShell({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // 그룹별 네비게이션 — "Browse"(전체 열람)와 "My Queue"(내게 할당된 검증 대기)를 명확히 분리
-  const NAV_GROUPS: { title?: string; items: { href: string; label: string }[] }[] = [
-    { items: [{ href: "/dashboard", label: "Dashboard" }] },
-    {
-      title: "Browse",
-      items: [
-        { href: "/spots", label: "Spots" },
-        { href: "/spot-business-info", label: "Business Info" },
-      ],
-    },
+  // 그룹별 네비게이션 — "My Queue"(내게 할당된 검증 대기)를 우선 노출하고 "Browse"(전체 열람)를 그다음에
+  const NAV_GROUPS: {
+    title?: string;
+    items: { href: string; label: string; icon: typeof LayoutDashboard }[];
+  }[] = [
+    { items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] },
     {
       title: "My Queue",
       items: userId
@@ -41,9 +46,17 @@ export function AdminShell({
             {
               href: `/spots?pipeline_status=ENRICHED&assigned_to_uid=${userId}`,
               label: "Pending Review",
+              icon: ClipboardCheck,
             },
           ]
         : [],
+    },
+    {
+      title: "Browse",
+      items: [
+        { href: "/spots", label: "Spots", icon: MapPin },
+        { href: "/spot-business-info", label: "Business Info", icon: Building2 },
+      ],
     },
   ];
 
@@ -107,18 +120,20 @@ export function AdminShell({
                 const currentAssigned = searchParams.has("assigned_to_uid");
                 const active =
                   pathname.startsWith(itemPath) && itemAssigned === currentAssigned;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       active
                         ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
                         : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     )}
                   >
+                    <Icon className="size-4 shrink-0" />
                     {item.label}
                   </Link>
                 );
@@ -137,7 +152,7 @@ export function AdminShell({
               type="submit"
               className="w-full justify-start text-xs"
             >
-              로그아웃
+              Log out
             </Button>
           </form>
         </div>
