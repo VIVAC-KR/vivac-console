@@ -63,6 +63,80 @@ function parseNum(v: string): number | null {
   return isNaN(n) ? null : n;
 }
 
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`script load failed: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+type DaumPostcodeData = {
+  roadAddress: string;
+  zonecode: string;
+  sido: string;
+  sigungu: string;
+};
+
+declare global {
+  interface Window {
+    daum: {
+      Postcode: new (options: {
+        oncomplete: (data: DaumPostcodeData) => void;
+        onclose: () => void;
+      }) => { open: () => void };
+    };
+    kakao: {
+      maps: {
+        load: (cb: () => void) => void;
+        services: {
+          Geocoder: new () => {
+            addressSearch: (
+              address: string,
+              cb: (result: { x: string; y: string }[], status: string) => void
+            ) => void;
+          };
+          Status: { OK: string };
+        };
+      };
+    };
+  }
+}
+
+/** 도로명주소 검색 팝업 오픈 (Daum Postcode) */
+async function openAddressSearch(
+  onSelect: (data: DaumPostcodeData) => void,
+  onClose: () => void
+) {
+  await loadScript("//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js");
+  new window.daum.Postcode({
+    oncomplete: (data: DaumPostcodeData) => onSelect(data),
+    onclose: onClose,
+  }).open();
+}
+
+/** 도로명주소 → 위경도 (Kakao Maps Geocoder) */
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+  if (!appkey) return null;
+  await loadScript(
+    `//dapi.kakao.com/v2/maps/sdk.js?appkey=${appkey}&autoload=false&libraries=services`
+  );
+  await new Promise<void>((resolve) => window.kakao.maps.load(resolve));
+  return new Promise((resolve) => {
+    new window.kakao.maps.services.Geocoder().addressSearch(address, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK && result[0]) {
+        resolve({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
 export function SpotEditForm({
   spot,
   currentUserId,
@@ -77,6 +151,7 @@ export function SpotEditForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   // 클릭된 버튼(저장/제출/반려)에 따라 함께 보낼 pipeline_status. 각 버튼 onClick에서 세팅.
   const pendingStatusRef = useRef<"CURATED" | "REJECTED" | null>(null);
   // 제출/반려는 ENRICHED 상태 + 내게 할당된 항목에서만 (backend PATCH도 동일하게 강제)
@@ -167,6 +242,24 @@ export function SpotEditForm({
     });
   }
 
+  function handleAddressSearch() {
+    setIsSearchingAddress(true);
+    openAddressSearch(
+      async (data) => {
+        setValue("address", data.roadAddress, { shouldDirty: true });
+        setValue("postal_code", data.zonecode, { shouldDirty: true });
+        setValue("region_province", data.sido, { shouldDirty: true });
+        setValue("region_city", data.sigungu, { shouldDirty: true });
+        const coords = await geocodeAddress(data.roadAddress);
+        if (coords) {
+          setValue("latitude", coords.lat.toString(), { shouldDirty: true });
+          setValue("longitude", coords.lng.toString(), { shouldDirty: true });
+        }
+      },
+      () => setIsSearchingAddress(false)
+    ).catch(() => setIsSearchingAddress(false));
+  }
+
   // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지) — category는 CategorySelect로 별도 처리
   const tagsField = (name: Exclude<keyof FormValues, "category">) => ({
     value: parseArr(watch(name)) ?? [],
@@ -246,7 +339,17 @@ export function SpotEditForm({
           label="주소"
           extra={<SearchLink q={[watch("title"), watch("address")].filter(Boolean).join(" ")} />}
         >
-          <Input {...register("address")} />
+          <div className="flex gap-2">
+            <Input {...register("address")} />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSearchingAddress}
+              onClick={handleAddressSearch}
+            >
+              {isSearchingAddress ? "검색 중…" : "주소 검색"}
+            </Button>
+          </div>
         </Field>
         <Field label="상세 주소"><Input {...register("address_detail")} /></Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
