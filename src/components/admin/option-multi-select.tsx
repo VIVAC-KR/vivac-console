@@ -2,17 +2,17 @@
 
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { CategoryOption } from "@/lib/types";
+import type { SpotOption } from "@/lib/types";
 
-/** 고정 목록(카테고리 관리 화면에서 등록된 값)에서만 고르는 다중 선택 — 값을 칩으로 표시, select로 추가 */
-export function CategorySelect({
+/** 고정 목록(Field Options 관리 화면에서 등록된 값)에서만 고르는 다중 선택 — 값을 칩으로 표시, select로 추가 */
+export function OptionMultiSelect({
   value,
   onChange,
   options,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
-  options: CategoryOption[];
+  options: SpotOption[];
 }) {
   const labelFor = (code: string) =>
     options.find((o) => o.code === code)?.label_ko ?? code;

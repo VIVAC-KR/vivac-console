@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, apiList, apiMutate, ApiError } from "@/lib/api";
 import { auth } from "@/auth";
-import type { CategoryOption, SpotDetail } from "@/lib/types";
+import type { SpotDetail, SpotOption } from "@/lib/types";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 import { CopyButton } from "@/components/admin/copy-button";
@@ -35,7 +35,14 @@ export default async function SpotEditPage({
 
   // 이 스팟의 사업정보 (보통 1건). 1건이면 상세로 직행, 여러 건이면 필터 목록으로.
   // 수정 기록 — 실패해도 편집 화면은 유지 (편집이 우선)
-  const [{ data: biList, total: biTotal }, history, categoryOptions] = await Promise.all([
+  const [
+    { data: biList, total: biTotal },
+    history,
+    category,
+    amenities,
+    nearby_facilities,
+    has_equipment_rental,
+  ] = await Promise.all([
     apiList<{ uid: string }>("/internal/spot-business-info", {
       spot_uid: uid,
       _start: 0,
@@ -44,8 +51,12 @@ export default async function SpotEditPage({
     apiFetch<HistoryEntry[]>(`/internal/spots/${encodedUid}/history`).catch(
       () => null
     ),
-    apiFetch<CategoryOption[]>("/internal/categories"),
+    apiFetch<SpotOption[]>("/internal/spot-options?field=category"),
+    apiFetch<SpotOption[]>("/internal/spot-options?field=amenities"),
+    apiFetch<SpotOption[]>("/internal/spot-options?field=nearby_facilities"),
+    apiFetch<SpotOption[]>("/internal/spot-options?field=has_equipment_rental"),
   ]);
+  const fieldOptions = { category, amenities, nearby_facilities, has_equipment_rental };
   const businessInfoHref =
     biTotal === 1 && biList[0]
       ? `/spot-business-info/${biList[0].uid}/edit`
@@ -98,7 +109,7 @@ export default async function SpotEditPage({
       <SpotEditForm
         spot={spot}
         currentUserId={session?.user?.id}
-        categoryOptions={categoryOptions}
+        fieldOptions={fieldOptions}
         onSave={saveSpot}
       />
 

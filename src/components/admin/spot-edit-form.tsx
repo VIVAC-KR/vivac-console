@@ -9,8 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TagsInput } from "@/components/admin/tags-input";
-import { CategorySelect } from "@/components/admin/category-select";
-import type { CategoryOption, SpotDetail } from "@/lib/types";
+import { OptionMultiSelect } from "@/components/admin/option-multi-select";
+import type { SpotDetail, SpotOption } from "@/lib/types";
 
 type FormValues = {
   title: string;
@@ -31,10 +31,10 @@ type FormValues = {
   pet_policy: string;
   themes: string;
   fire_pit_type: string;
-  amenities: string;
-  nearby_facilities: string;
+  amenities: string[];
+  nearby_facilities: string[];
   camp_sight_type: string;
-  has_equipment_rental: string;
+  has_equipment_rental: string[];
   website_url: string;
   booking_url: string;
   features: string;
@@ -66,12 +66,17 @@ function parseNum(v: string): number | null {
 export function SpotEditForm({
   spot,
   currentUserId,
-  categoryOptions,
+  fieldOptions,
   onSave,
 }: {
   spot: SpotDetail;
   currentUserId?: string;
-  categoryOptions: CategoryOption[];
+  fieldOptions: {
+    category: SpotOption[];
+    amenities: SpotOption[];
+    nearby_facilities: SpotOption[];
+    has_equipment_rental: SpotOption[];
+  };
   onSave: (uid: string, data: Record<string, unknown>) => Promise<string | null>;
 }) {
   const router = useRouter();
@@ -109,10 +114,10 @@ export function SpotEditForm({
       pet_policy: spot.pet_policy ?? "",
       themes: arr(spot.themes),
       fire_pit_type: spot.fire_pit_type ?? "",
-      amenities: arr(spot.amenities),
-      nearby_facilities: arr(spot.nearby_facilities),
+      amenities: spot.amenities ?? [],
+      nearby_facilities: spot.nearby_facilities ?? [],
       camp_sight_type: spot.camp_sight_type ?? "",
-      has_equipment_rental: arr(spot.has_equipment_rental),
+      has_equipment_rental: spot.has_equipment_rental ?? [],
       website_url: spot.website_url ?? "",
       booking_url: spot.booking_url ?? "",
       features: spot.features ?? "",
@@ -146,10 +151,10 @@ export function SpotEditForm({
         pet_policy: values.pet_policy || null,
         themes: parseArr(values.themes),
         fire_pit_type: values.fire_pit_type || null,
-        amenities: parseArr(values.amenities),
-        nearby_facilities: parseArr(values.nearby_facilities),
+        amenities: values.amenities.length ? values.amenities : null,
+        nearby_facilities: values.nearby_facilities.length ? values.nearby_facilities : null,
         camp_sight_type: values.camp_sight_type || null,
-        has_equipment_rental: parseArr(values.has_equipment_rental),
+        has_equipment_rental: values.has_equipment_rental.length ? values.has_equipment_rental : null,
         website_url: values.website_url || null,
         booking_url: values.booking_url || null,
         features: values.features || null,
@@ -167,8 +172,14 @@ export function SpotEditForm({
     });
   }
 
-  // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지) — category는 CategorySelect로 별도 처리
-  const tagsField = (name: Exclude<keyof FormValues, "category">) => ({
+  // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지)
+  // — category/amenities/nearby_facilities/has_equipment_rental는 OptionMultiSelect로 별도 처리
+  const tagsField = (
+    name: Exclude<
+      keyof FormValues,
+      "category" | "amenities" | "nearby_facilities" | "has_equipment_rental"
+    >
+  ) => ({
     value: parseArr(watch(name)) ?? [],
     onChange: (v: string[]) =>
       setValue(name, v.join(", "), { shouldDirty: true }),
@@ -206,10 +217,10 @@ export function SpotEditForm({
         <Field label="한줄설명"><Input {...register("tagline")} /></Field>
         <Field label="설명"><Textarea {...register("description")} rows={4} /></Field>
         <Field label="카테고리">
-          <CategorySelect
+          <OptionMultiSelect
             value={watch("category")}
             onChange={(v) => setValue("category", v, { shouldDirty: true })}
-            options={categoryOptions}
+            options={fieldOptions.category}
           />
         </Field>
         <Field label="태그"><TagsInput {...tagsField("themes")} /></Field>
@@ -286,9 +297,27 @@ export function SpotEditForm({
         </div>
         <Field label="화로 유형"><Input {...register("fire_pit_type")} /></Field>
         <Field label="사이트 유형"><Input {...register("camp_sight_type")} /></Field>
-        <Field label="편의시설"><TagsInput {...tagsField("amenities")} /></Field>
-        <Field label="주변 시설"><TagsInput {...tagsField("nearby_facilities")} /></Field>
-        <Field label="렌탈 장비"><TagsInput {...tagsField("has_equipment_rental")} /></Field>
+        <Field label="편의시설">
+          <OptionMultiSelect
+            value={watch("amenities")}
+            onChange={(v) => setValue("amenities", v, { shouldDirty: true })}
+            options={fieldOptions.amenities}
+          />
+        </Field>
+        <Field label="주변 시설">
+          <OptionMultiSelect
+            value={watch("nearby_facilities")}
+            onChange={(v) => setValue("nearby_facilities", v, { shouldDirty: true })}
+            options={fieldOptions.nearby_facilities}
+          />
+        </Field>
+        <Field label="렌탈 장비">
+          <OptionMultiSelect
+            value={watch("has_equipment_rental")}
+            onChange={(v) => setValue("has_equipment_rental", v, { shouldDirty: true })}
+            options={fieldOptions.has_equipment_rental}
+          />
+        </Field>
         <Field label="특이사항"><Textarea {...register("features")} rows={3} /></Field>
         <Field label="배상책임보험">
           <select {...register("has_liability_insurance")} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">

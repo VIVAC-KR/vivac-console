@@ -38,7 +38,14 @@ export type SpotDetail = {
   updated_at: string | null;
 };
 
-export type CategoryOption = {
+export type SpotOptionField =
+  | "category"
+  | "amenities"
+  | "nearby_facilities"
+  | "has_equipment_rental";
+
+export type SpotOption = {
+  field: SpotOptionField;
   code: string;
   label_ko: string;
 };

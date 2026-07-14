@@ -61,7 +61,7 @@ export function AdminShell({
     },
     {
       title: "Admin",
-      items: [{ href: "/categories", label: "Categories", icon: Tags }],
+      items: [{ href: "/spot-options", label: "Field Options", icon: Tags }],
     },
   ];
 

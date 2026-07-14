@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 
-export function DeleteCategoryButton({
+export function DeleteOptionButton({
   code,
   action,
 }: {
@@ -20,9 +20,7 @@ export function DeleteCategoryButton({
       disabled={isPending}
       onClick={() => {
         if (
-          !confirm(
-            `"${code}" 카테고리를 삭제하시겠습니까?\n모든 스팟의 카테고리에서도 함께 제거됩니다.`
-          )
+          !confirm(`"${code}" 항목을 삭제하시겠습니까?\n모든 스팟에서도 함께 제거됩니다.`)
         ) {
           return;
         }
