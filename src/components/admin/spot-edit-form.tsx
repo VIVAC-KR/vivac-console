@@ -64,9 +64,11 @@ function parseNum(v: string): number | null {
 
 export function SpotEditForm({
   spot,
+  currentUserId,
   onSave,
 }: {
   spot: SpotDetail;
+  currentUserId?: string;
   onSave: (uid: string, data: Record<string, unknown>) => Promise<string | null>;
 }) {
   const router = useRouter();
@@ -74,7 +76,9 @@ export function SpotEditForm({
   const [error, setError] = useState<string | null>(null);
   // 클릭된 버튼(저장/제출/반려)에 따라 함께 보낼 pipeline_status. 각 버튼 onClick에서 세팅.
   const pendingStatusRef = useRef<"CURATED" | "REJECTED" | null>(null);
-  const isReviewQueueItem = spot.pipeline_status === "ENRICHED";
+  // 제출/반려는 ENRICHED 상태 + 내게 할당된 항목에서만 (backend PATCH도 동일하게 강제)
+  const isReviewQueueItem =
+    spot.pipeline_status === "ENRICHED" && spot.assigned_to_uid === currentUserId;
 
   const {
     register,
@@ -286,13 +290,13 @@ export function SpotEditForm({
         </Field>
       </section>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex justify-end gap-3 pt-2">
         <Button
           type="submit"
           disabled={isPending}
           onClick={() => (pendingStatusRef.current = null)}
         >
-          {isPending ? "저장 중…" : "저장"}
+          {isPending ? "Saving…" : "Save"}
         </Button>
         {isReviewQueueItem && (
           <>
@@ -301,7 +305,7 @@ export function SpotEditForm({
               disabled={isPending}
               onClick={() => (pendingStatusRef.current = "CURATED")}
             >
-              제출
+              Submit
             </Button>
             <Button
               type="submit"
@@ -309,12 +313,12 @@ export function SpotEditForm({
               disabled={isPending}
               onClick={() => (pendingStatusRef.current = "REJECTED")}
             >
-              반려
+              Reject
             </Button>
           </>
         )}
         <Button type="button" variant="ghost" onClick={() => router.push("/spots")}>
-          취소
+          Cancel
         </Button>
       </div>
     </form>

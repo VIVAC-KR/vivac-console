@@ -27,6 +27,7 @@ export type SpotDetail = {
   camp_sight_type: string | null;
   rating_avg: number;
   review_count: number;
+  assigned_to_uid: string | null;
   website_url: string | null;
   booking_url: string | null;
   features: string | null;

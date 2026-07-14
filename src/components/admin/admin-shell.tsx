@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export function AdminShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [deskCollapsed, setDeskCollapsed] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // 그룹별 네비게이션 — "Browse"(전체 열람)와 "My Queue"(내게 할당된 검증 대기)를 명확히 분리
   const NAV_GROUPS: { title?: string; items: { href: string; label: string }[] }[] = [
@@ -99,7 +100,13 @@ export function AdminShell({
                 </p>
               )}
               {group.items.map((item) => {
-                const active = pathname.startsWith(item.href.split("?")[0]);
+                const [itemPath, itemQuery] = item.href.split("?");
+                // Browse의 "Spots"와 My Queue의 "Pending Review"가 같은 경로(/spots)를
+                // 공유하므로, assigned_to_uid 유무로 두 탭을 구분해 동시 활성화를 막는다.
+                const itemAssigned = new URLSearchParams(itemQuery).has("assigned_to_uid");
+                const currentAssigned = searchParams.has("assigned_to_uid");
+                const active =
+                  pathname.startsWith(itemPath) && itemAssigned === currentAssigned;
                 return (
                   <Link
                     key={item.href}

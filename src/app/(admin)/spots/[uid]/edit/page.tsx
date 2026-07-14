@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, apiList, apiMutate, ApiError } from "@/lib/api";
+import { auth } from "@/auth";
 import type { SpotDetail } from "@/lib/types";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
@@ -21,6 +22,7 @@ export default async function SpotEditPage({
 }) {
   const { uid } = await params;
   const encodedUid = encodeURIComponent(uid);
+  const session = await auth();
 
   let spot: SpotDetail;
   try {
@@ -87,7 +89,7 @@ export default async function SpotEditPage({
         />
       )}
 
-      <SpotEditForm spot={spot} onSave={saveSpot} />
+      <SpotEditForm spot={spot} currentUserId={session?.user?.id} onSave={saveSpot} />
 
       <div className="max-w-2xl">
         <ChangeHistory entries={history} />
