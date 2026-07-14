@@ -63,6 +63,21 @@ function parseNum(v: string): number | null {
   return isNaN(n) ? null : n;
 }
 
+// ponytail: 서울(02)/일반 지역·휴대폰(0XX) 번호만 커버, 1588 등 4자리 대표번호는 자동포맷 안 됨(수동 입력 가능)
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.startsWith("02")) {
+    if (digits.length < 3) return digits;
+    if (digits.length < 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    if (digits.length < 10) return `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
+  }
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return digits;
+  if (digits.length < 11) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+}
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
@@ -331,6 +346,8 @@ export function SpotEditForm({
                 const t = v.trim();
                 return !t || /^\d[\d-]*\d$/.test(t) || "숫자와 하이픈(-)만 입력 가능합니다";
               },
+              onChange: (e) =>
+                setValue("phone", formatPhoneNumber(e.target.value), { shouldValidate: true }),
             })}
             aria-invalid={!!errors.phone}
           />
