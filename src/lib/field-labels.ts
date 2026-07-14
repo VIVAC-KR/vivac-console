@@ -3,7 +3,7 @@
 export const FIELD_LABELS: Record<string, string> = {
   // spots
   title: "이름",
-  pipeline_status: "파이프라인 상태",
+  pipeline_status: "처리 상태",
   source: "소스",
   external_id: "외부 ID",
   address: "주소",
@@ -22,7 +22,7 @@ export const FIELD_LABELS: Record<string, string> = {
   is_pet_allowed: "반려동물 허용",
   pet_policy: "반려동물 정책",
   has_equipment_rental: "렌탈 장비",
-  themes: "테마",
+  themes: "태그",
   fire_pit_type: "화로 유형",
   amenities: "편의시설",
   nearby_facilities: "주변 시설",

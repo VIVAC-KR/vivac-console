@@ -17,6 +17,7 @@ const PAGE_SIZE = 25;
 type BusinessInfoListItem = {
   uid: string;
   spot_uid: string;
+  spot_title: string;
   business_type: string | null;
   operating_status: string | null;
   updated_at: string | null;
@@ -88,7 +89,7 @@ export default async function BusinessInfoPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Spot UID</TableHead>
+              <TableHead>스팟</TableHead>
               <TableHead><Link href={sortLink("business_type")}>사업유형{sortIndicator("business_type")}</Link></TableHead>
               <TableHead><Link href={sortLink("operating_status")}>운영상태{sortIndicator("operating_status")}</Link></TableHead>
               <TableHead><Link href={sortLink("updated_at")}>수정일{sortIndicator("updated_at")}</Link></TableHead>
@@ -98,7 +99,14 @@ export default async function BusinessInfoPage({
           <TableBody>
             {items.map((item) => (
               <ClickableRow key={item.uid} href={`/spot-business-info/${item.uid}/edit`}>
-                <TableCell className="font-mono text-xs text-zinc-500">{item.spot_uid}</TableCell>
+                <TableCell>
+                  <Link
+                    href={`/spots/${item.spot_uid}/edit`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {item.spot_title}
+                  </Link>
+                </TableCell>
                 <TableCell>{item.business_type ?? "-"}</TableCell>
                 <TableCell>
                   {item.operating_status ? (

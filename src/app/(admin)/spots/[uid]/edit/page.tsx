@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import type { SpotDetail } from "@/lib/types";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
+import { CopyButton } from "@/components/admin/copy-button";
 
 /** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
 async function saveSpot(
@@ -59,10 +60,14 @@ export default async function SpotEditPage({
           {spot.external_id && ` · ID: ${spot.external_id}`}
           {spot.updated_at && ` · 수정일: ${new Date(spot.updated_at).toLocaleString("ko-KR")}`}
         </p>
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
+          <span>UID: {spot.uid}</span>
+          <CopyButton value={spot.uid} />
+        </p>
         <div className="mt-2 flex gap-4 text-sm">
           {biTotal > 0 ? (
             <Link href={businessInfoHref} className="text-blue-600 hover:underline">
-              이 스팟의 사업정보 {biTotal > 1 ? `${biTotal}건 보기` : "보기"} →
+              이 장소의 사업정보 {biTotal > 1 ? `${biTotal}건 보기` : "보기"} →
             </Link>
           ) : (
             <span className="text-zinc-400">사업정보 없음</span>

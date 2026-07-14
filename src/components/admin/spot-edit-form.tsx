@@ -180,7 +180,7 @@ export function SpotEditForm({
     >
       {spot.pipeline_status && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-zinc-500">파이프라인 상태</span>
+          <span className="text-sm text-zinc-500">처리 상태</span>
           <Badge variant={isReviewQueueItem ? "default" : "secondary"}>
             {spot.pipeline_status}
           </Badge>
@@ -195,18 +195,18 @@ export function SpotEditForm({
         </div>
       )}
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 rounded-lg border p-5">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">기본 정보</h2>
         <Field label="이름 *" extra={<SearchLink q={watch("title")} />}>
           <Input {...register("title")} required />
         </Field>
-        <Field label="tagline"><Input {...register("tagline")} /></Field>
+        <Field label="한줄설명"><Input {...register("tagline")} /></Field>
         <Field label="설명"><Textarea {...register("description")} rows={4} /></Field>
         <Field label="카테고리"><TagsInput {...tagsField("category")} /></Field>
-        <Field label="테마"><TagsInput {...tagsField("themes")} /></Field>
+        <Field label="태그"><TagsInput {...tagsField("themes")} /></Field>
       </section>
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 rounded-lg border p-5">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">연락처 / 링크</h2>
         <Field
           label="전화번호"
@@ -231,7 +231,7 @@ export function SpotEditForm({
         <Field label="예약 링크"><Input {...register("booking_url")} type="url" /></Field>
       </section>
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 rounded-lg border p-5">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">위치</h2>
         <Field
           label="주소"
@@ -252,7 +252,7 @@ export function SpotEditForm({
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 rounded-lg border p-5">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">시설 / 정책</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="유료 여부">
