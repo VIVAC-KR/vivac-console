@@ -117,6 +117,23 @@ export default async function DashboardPage() {
             }
           />
         </div>
+        <div className="rounded-xl border p-4">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="text-zinc-500">완료율</span>
+            <span className="tabular-nums text-zinc-500">
+              {stats.my_completed.toLocaleString("ko-KR")} / {stats.my_assigned_total.toLocaleString("ko-KR")}
+              {myCompletionRate && ` (${myCompletionRate})`}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{
+                width: `${stats.my_assigned_total > 0 ? (stats.my_completed / stats.my_assigned_total) * 100 : 0}%`,
+              }}
+            />
+          </div>
+        </div>
       </section>
 
       {/* 분포 */}
