@@ -118,3 +118,19 @@ export type SpotGroupSpotItem = {
   added_by_uid: string;
   added_at: string | null;
 };
+
+export type SpotAdminSearchResult = {
+  uid: string;
+  title: string;
+  region_province: string | null;
+  region_city: string | null;
+  pipeline_status: string | null;
+  trust_tier: number | null;
+};
+
+export type SpotGroupOfSpotItem = {
+  uid: string;
+  name: string;
+  visibility: SpotGroupVisibility;
+  added_at: string | null;
+};

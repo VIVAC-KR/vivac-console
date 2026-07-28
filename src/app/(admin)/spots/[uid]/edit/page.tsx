@@ -1,11 +1,14 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, apiList, apiMutate, ApiError } from "@/lib/api";
+import { apiFetch, apiList, apiMutate, apiCreate, apiDelete, ApiError } from "@/lib/api";
 import { auth } from "@/auth";
-import type { SpotDetail, SpotOption } from "@/lib/types";
+import type { SpotDetail, SpotOption, SpotGroupOfSpotItem } from "@/lib/types";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 import { CopyButton } from "@/components/admin/copy-button";
+import { Badge } from "@/components/ui/badge";
+import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
+import { GroupPicker } from "@/components/admin/group-picker";
 
 /** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
 async function saveSpot(
@@ -16,13 +19,40 @@ async function saveSpot(
   return apiMutate(`/internal/spots/${encodeURIComponent(uid)}`, data);
 }
 
+async function addSpotToGroupAction(spotUid: string, groupUid: string) {
+  "use server";
+  const error = await apiCreate(`/internal/groups/${encodeURIComponent(groupUid)}/spots`, {
+    spot_uid: spotUid,
+  });
+  redirect(
+    error
+      ? `/spots/${spotUid}/edit?error=${encodeURIComponent(error)}`
+      : `/spots/${spotUid}/edit?saved=1`
+  );
+}
+
+async function removeSpotFromGroupAction(spotUid: string, groupUid: string) {
+  "use server";
+  const error = await apiDelete(
+    `/internal/groups/${encodeURIComponent(groupUid)}/spots/${encodeURIComponent(spotUid)}`
+  );
+  redirect(
+    error
+      ? `/spots/${spotUid}/edit?error=${encodeURIComponent(error)}`
+      : `/spots/${spotUid}/edit?saved=1`
+  );
+}
+
 export default async function SpotEditPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ uid: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { uid } = await params;
   const encodedUid = encodeURIComponent(uid);
+  const { saved, error } = await searchParams;
   const session = await auth();
 
   let spot: SpotDetail;
@@ -42,6 +72,7 @@ export default async function SpotEditPage({
     amenities,
     nearby_facilities,
     has_equipment_rental,
+    groups,
   ] = await Promise.all([
     apiList<{ uid: string }>("/internal/spot-business-info", {
       spot_uid: uid,
@@ -55,6 +86,7 @@ export default async function SpotEditPage({
     apiFetch<SpotOption[]>("/internal/spot-options?field=amenities"),
     apiFetch<SpotOption[]>("/internal/spot-options?field=nearby_facilities"),
     apiFetch<SpotOption[]>("/internal/spot-options?field=has_equipment_rental"),
+    apiFetch<SpotGroupOfSpotItem[]>(`/internal/spots/${encodedUid}/groups`).catch(() => []),
   ]);
   const fieldOptions = { category, amenities, nearby_facilities, has_equipment_rental };
   const businessInfoHref =
@@ -62,8 +94,24 @@ export default async function SpotEditPage({
       ? `/spot-business-info/${biList[0].uid}/edit`
       : `/spot-business-info?spot_uid=${uid}`;
 
+  const addSpotToGroupActionForSpot = addSpotToGroupAction.bind(null, uid);
+
   return (
     <div className="flex flex-col gap-6">
+      {saved && (
+        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+          저장되었습니다.
+        </div>
+      )}
+      {error && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
+        >
+          {error}
+        </div>
+      )}
+
       <div>
         <Link href="/spots" className="text-sm text-zinc-500 hover:text-zinc-900">← Spots 목록</Link>
         <h1 className="mt-2 text-xl font-semibold">{spot.title}</h1>
@@ -116,6 +164,39 @@ export default async function SpotEditPage({
       <div className="max-w-2xl">
         <ChangeHistory entries={history} />
       </div>
+
+      <section className="flex flex-col gap-3 max-w-2xl">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
+          소속 그룹 <span className="text-zinc-400 font-normal normal-case">{groups.length}개</span>
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {groups.map((group) => {
+            const removeFromGroup = removeSpotFromGroupAction.bind(null, uid, group.uid);
+            return (
+              <div key={group.uid} className="flex items-center gap-1.5">
+                <Badge variant="secondary" className="gap-1.5">
+                  <Link href={`/spot-groups/${group.uid}/edit`} className="hover:underline">
+                    {group.name}
+                  </Link>
+                  <span className="text-zinc-400">{group.visibility}</span>
+                </Badge>
+                <ConfirmActionButton
+                  confirmMessage={`"${group.name}" 그룹에서 이 스팟을 제거하시겠습니까?`}
+                  action={removeFromGroup}
+                  variant="ghost"
+                >
+                  제거
+                </ConfirmActionButton>
+              </div>
+            );
+          })}
+          {groups.length === 0 && <span className="text-sm text-zinc-400">소속된 그룹 없음</span>}
+        </div>
+        <GroupPicker
+          onPick={addSpotToGroupActionForSpot}
+          excludeUids={groups.map((g) => g.uid)}
+        />
+      </section>
     </div>
   );
 }
