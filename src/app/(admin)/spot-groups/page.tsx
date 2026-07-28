@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ClickableRow } from "@/components/admin/clickable-row";
 import { FacetFilter } from "@/components/admin/facet-filter";
 import { ChevronRight } from "lucide-react";
@@ -81,6 +81,9 @@ export default async function SpotGroupsPage({ searchParams }: { searchParams: S
           Spot Groups <span className="text-zinc-400 text-base font-normal">{total}개</span>
         </h1>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <Link href="/spot-groups/new" className={buttonVariants({ variant: "default" })}>
+            새 그룹
+          </Link>
           <FacetFilter
             label="공개범위"
             param="visibility"

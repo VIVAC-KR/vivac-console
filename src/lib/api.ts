@@ -107,6 +107,21 @@ export async function apiCreate(
   return parseErrorBody(res.status, body);
 }
 
+/** POST — 생성된 리소스의 응답 바디가 필요한 경우: 성공 시 {data, error:null}, 실패 시 {data:null, error} */
+export async function apiCreateWithResult<T>(
+  path: string,
+  data: Record<string, unknown>
+): Promise<{ data: T | null; error: string | null }> {
+  const res = await fetch(`${getBase()}${path}`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (res.ok) return { data: (await res.json()) as T, error: null };
+  const body = await res.text().catch(() => "");
+  return { data: null, error: parseErrorBody(res.status, body) };
+}
+
 /** DELETE — 삭제 결과: 성공 시 null, 실패 시 사람이 읽을 에러 메시지 */
 export async function apiDelete(path: string): Promise<string | null> {
   const res = await fetch(`${getBase()}${path}`, {
