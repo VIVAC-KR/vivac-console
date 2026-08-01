@@ -10,6 +10,7 @@ import {
 import { auth } from "@/auth";
 import { apiFetch, apiList } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { DbDumpButton } from "@/components/admin/db-dump-button";
 
 type CountItem = { key: string; count: number };
 type SpotStats = {
@@ -40,7 +41,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <DbDumpButton />
+      </div>
 
       {/* Browse — 전체 데이터 요약 */}
       <section className="flex flex-col gap-3">
