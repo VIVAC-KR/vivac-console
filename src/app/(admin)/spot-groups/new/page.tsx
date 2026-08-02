@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { apiCreate, apiCreateWithResult } from "@/lib/api";
+import { apiCreate, apiCreateWithResult, redirectResult } from "@/lib/api";
 import type { SpotGroupAdminDetail } from "@/lib/types";
 import { SpotGroupCreateForm } from "@/components/admin/spot-group-create-form";
 
@@ -23,23 +23,20 @@ async function createGroupAction(data: {
     redirect(`/spot-groups/new?error=${encodeURIComponent(error ?? "그룹 생성 실패")}`);
   }
 
-  let failCount = 0;
-  for (const spotUid of data.spot_uids) {
-    const spotError = await apiCreate(
-      `/internal/groups/${encodeURIComponent(created.uid)}/spots`,
-      { spot_uid: spotUid }
-    );
-    if (spotError) failCount++;
-  }
+  const results = await Promise.all(
+    data.spot_uids.map((spotUid) =>
+      apiCreate(`/internal/groups/${encodeURIComponent(created.uid)}/spots`, {
+        spot_uid: spotUid,
+      })
+    )
+  );
 
   const total = data.spot_uids.length;
-  const query =
-    failCount > 0
-      ? `?saved=1&error=${encodeURIComponent(
-          `스팟 ${total - failCount}/${total}개 추가됨 (${failCount}개 실패)`
-        )}`
-      : "?saved=1";
-  redirect(`/spot-groups/${created.uid}/edit${query}`);
+  const failCount = results.filter(Boolean).length;
+  redirectResult(
+    `/spot-groups/${created.uid}/edit`,
+    failCount > 0 ? `스팟 ${total - failCount}/${total}개 추가됨 (${failCount}개 실패)` : null
+  );
 }
 
 export default async function SpotGroupNewPage({

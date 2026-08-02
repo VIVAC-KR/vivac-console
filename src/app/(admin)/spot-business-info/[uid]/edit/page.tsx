@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, apiMutate, ApiError } from "@/lib/api";
+import { apiFetch, apiFetchOr404, apiMutate } from "@/lib/api";
+import { fmtDateTime } from "@/lib/utils";
 import type { BusinessInfoDetail } from "@/lib/types";
 import { SbiEditForm } from "@/components/admin/sbi-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
@@ -22,13 +22,9 @@ export default async function BusinessInfoEditPage({
   const { uid } = await params;
   const encodedUid = encodeURIComponent(uid);
 
-  let info: BusinessInfoDetail;
-  try {
-    info = await apiFetch<BusinessInfoDetail>(`/internal/spot-business-info/${encodedUid}`);
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) notFound();
-    throw err;
-  }
+  const info = await apiFetchOr404<BusinessInfoDetail>(
+    `/internal/spot-business-info/${encodedUid}`
+  );
 
   // 수정 기록 — business_info 레코드 uid로 조회 (실패해도 편집 화면 유지)
   const history = await apiFetch<HistoryEntry[]>(
@@ -50,7 +46,7 @@ export default async function BusinessInfoEditPage({
           >
             {info.spot_uid}
           </Link>
-          {info.updated_at && ` · 수정일: ${new Date(info.updated_at).toLocaleString("ko-KR")}`}
+          {info.updated_at && ` · 수정일: ${fmtDateTime(info.updated_at)}`}
         </p>
       </div>
       <SbiEditForm info={info} onSave={saveBusinessInfo} />

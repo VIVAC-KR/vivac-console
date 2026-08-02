@@ -7,11 +7,8 @@ export const proxy = auth((req) => {
   const { nextUrl } = req;
   // 백엔드 토큰이 만료된 세션은 로그아웃으로 취급 (session 콜백이 expired 세팅)
   const isLoggedIn = !!req.auth && !req.auth.expired;
-  const path = nextUrl.pathname;
 
-  if (path.startsWith("/api/auth")) return;
-
-  if (path === "/login") {
+  if (nextUrl.pathname === "/login") {
     if (isLoggedIn) return Response.redirect(new URL("/", nextUrl));
     return;
   }
@@ -22,5 +19,9 @@ export const proxy = auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next|favicon.ico|.*\\.svg|.*\\.png).*)"],
+  // 확장자는 반드시 경로 "끝"에서만 제외한다. `.*\.png`처럼 쓰면
+  // /spot-groups/x.png/edit 같은 경로가 통째로 proxy를 건너뛴다.
+  matcher: [
+    "/((?!api/auth|_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

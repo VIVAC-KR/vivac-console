@@ -1,21 +1,15 @@
-"use client"
-
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// 호출부가 이미 overflow-x-auto 컨테이너로 감싸고 있어 여기서 또 감싸지 않는다.
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
-    </div>
+    <table
+      data-slot="table"
+      className={cn("w-full caption-bottom text-sm", className)}
+      {...props}
+    />
   )
 }
 
@@ -34,19 +28,6 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
     <tbody
       data-slot="table-body"
       className={cn("[&_tr:last-child]:border-0", className)}
-      {...props}
-    />
-  )
-}
-
-function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
-  return (
-    <tfoot
-      data-slot="table-footer"
-      className={cn(
-        "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
-        className
-      )}
       {...props}
     />
   )
@@ -91,16 +72,20 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   )
 }
 
-function TableCaption({
-  className,
-  ...props
-}: React.ComponentProps<"caption">) {
+/** 목록이 비었을 때의 안내 행. */
+function EmptyRow({
+  colSpan,
+  children = "데이터 없음",
+}: {
+  colSpan: number
+  children?: React.ReactNode
+}) {
   return (
-    <caption
-      data-slot="table-caption"
-      className={cn("mt-4 text-sm text-muted-foreground", className)}
-      {...props}
-    />
+    <TableRow>
+      <TableCell colSpan={colSpan} className="text-center text-zinc-400 py-12">
+        {children}
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -108,9 +93,8 @@ export {
   Table,
   TableHeader,
   TableBody,
-  TableFooter,
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
+  EmptyRow,
 }

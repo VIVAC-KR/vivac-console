@@ -36,10 +36,7 @@ export function AdminShell({
   const searchParams = useSearchParams();
 
   // 그룹별 네비게이션 — "My Queue"(내게 할당된 검증 대기)를 우선 노출하고 "Browse"(전체 열람)를 그다음에
-  const NAV_GROUPS: {
-    title?: string;
-    items: { href: string; label: string; icon: typeof LayoutDashboard }[];
-  }[] = [
+  const NAV_GROUPS = [
     { items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] },
     {
       title: "My Queue",
@@ -127,7 +124,6 @@ export function AdminShell({
                 const currentAssigned = searchParams.has("assigned_to_uid");
                 const active =
                   pathname.startsWith(itemPath) && itemAssigned === currentAssigned;
-                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
@@ -140,7 +136,7 @@ export function AdminShell({
                         : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
+                    <item.icon className="size-4 shrink-0" />
                     {item.label}
                   </Link>
                 );

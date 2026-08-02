@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { apiList } from "@/lib/api";
+import { listQuery, PAGE_SIZE } from "@/lib/list-query";
+import { fmtDate } from "@/lib/utils";
 import {
+  EmptyRow,
   Table,
   TableBody,
   TableCell,
@@ -11,29 +14,28 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Pager } from "@/components/ui/pager";
+import { StatusBanner } from "@/components/ui/status-banner";
 import { ClickableRow } from "@/components/admin/clickable-row";
 import { FacetFilter } from "@/components/admin/facet-filter";
 import { ChevronRight } from "lucide-react";
 import { SPOT_GROUP_VISIBILITIES, type SpotGroupAdminListItem } from "@/lib/types";
 
-const PAGE_SIZE = 25;
-
-type SearchParams = Promise<Record<string, string | undefined>>;
-
-export default async function SpotGroupsPage({ searchParams }: { searchParams: SearchParams }) {
-  const sp = await searchParams;
-  const sort = sp.sort ?? "updated_at";
-  const order = sp.order ?? "desc";
+export default async function SpotGroupsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { sp, sort, order, page, start, end, href, sortLink, sortIndicator } = listQuery(
+    await searchParams
+  );
   const q = sp.q;
   const visibility = sp.visibility;
   const userUid = sp.user_uid;
-  const saved = sp.saved;
-  const currentPage = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
-  const start = (currentPage - 1) * PAGE_SIZE;
 
   const { data: groups, total } = await apiList<SpotGroupAdminListItem>("/internal/groups", {
     _start: start,
-    _end: start + PAGE_SIZE,
+    _end: end,
     _sort: sort,
     _order: order,
     name_like: q || undefined,
@@ -44,38 +46,9 @@ export default async function SpotGroupsPage({ searchParams }: { searchParams: S
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const hasActiveFilters = !!(q || visibility || userUid);
 
-  function buildQuery(overrides: Record<string, string>) {
-    const params = new URLSearchParams();
-    const merged = {
-      sort,
-      order,
-      q: q ?? "",
-      visibility: visibility ?? "",
-      user_uid: userUid ?? "",
-      ...overrides,
-    };
-    for (const [k, v] of Object.entries(merged)) if (v) params.set(k, String(v));
-    const s = params.toString();
-    return s ? `?${s}` : "";
-  }
-
-  function sortLink(col: string) {
-    const nextOrder = sort === col && order === "asc" ? "desc" : "asc";
-    return buildQuery({ sort: col, order: nextOrder, page: "1" });
-  }
-
-  function sortIndicator(col: string) {
-    if (sort !== col) return null;
-    return order === "asc" ? " ↑" : " ↓";
-  }
-
   return (
     <div className="flex flex-col gap-6">
-      {saved && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
-          저장되었습니다.
-        </div>
-      )}
+      <StatusBanner saved={sp.saved} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">
           Spot Groups <span className="text-zinc-400 text-base font-normal">{total}개</span>
@@ -138,9 +111,10 @@ export default async function SpotGroupsPage({ searchParams }: { searchParams: S
                 <TableCell>{group.member_count}</TableCell>
                 <TableCell>{group.spot_count}</TableCell>
                 <TableCell className="text-zinc-500 text-xs">
-                  {group.updated_at ? new Date(group.updated_at).toLocaleDateString("ko-KR") : "-"}
+                  {fmtDate(group.updated_at)}
                 </TableCell>
                 <TableCell className="w-8 text-right">
+                  {/* 행 클릭 외에 키보드/새 탭으로도 갈 수 있는 실제 링크 */}
                   <Link
                     href={`/spot-groups/${group.uid}/edit`}
                     aria-label="편집"
@@ -151,32 +125,12 @@ export default async function SpotGroupsPage({ searchParams }: { searchParams: S
                 </TableCell>
               </ClickableRow>
             ))}
-            {groups.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-zinc-400 py-12">
-                  데이터 없음
-                </TableCell>
-              </TableRow>
-            )}
+            {groups.length === 0 && <EmptyRow colSpan={6} />}
           </TableBody>
         </Table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center gap-2 text-sm">
-          {currentPage > 1 && (
-            <Link href={buildQuery({ page: String(currentPage - 1) })} className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900">
-              이전
-            </Link>
-          )}
-          <span className="text-zinc-500">{currentPage} / {totalPages}</span>
-          {currentPage < totalPages && (
-            <Link href={buildQuery({ page: String(currentPage + 1) })} className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900">
-              다음
-            </Link>
-          )}
-        </div>
-      )}
+      <Pager page={page} totalPages={totalPages} href={(p) => href({ page: String(p) })} />
     </div>
   );
 }

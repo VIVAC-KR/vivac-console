@@ -4,37 +4,51 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { searchSpots } from "@/lib/actions/spot-search";
+import { searchSpots } from "@/lib/actions/search";
 import type { SpotAdminSearchResult } from "@/lib/types";
 
 /** 스팟 검색 후 담아두는 다중 선택 — 칩 목록(제목+지역+X), 선택 시 자체 상태로 표시용 데이터도 함께 보관 */
 export function SpotPicker({
   value,
   onChange,
-  excludeUids = [],
 }: {
   value: string[];
   onChange: (uids: string[]) => void;
-  excludeUids?: string[];
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SpotAdminSearchResult[]>([]);
   const [staged, setStaged] = useState<SpotAdminSearchResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query.trim();
-    if (!q) {
-      setResults([]);
-      return;
-    }
+    if (!q) return;
+    let cancelled = false;
     const timer = setTimeout(() => {
-      searchSpots(q).then(setResults);
+      // 선택된 항목은 클라이언트에서 걸러내므로 그만큼 여유분을 더 받아온다
+      searchSpots(q, 10 + value.length)
+        .then((rows) => {
+          if (cancelled) return;
+          setResults(rows);
+          setError(null);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setResults([]);
+          setError("검색에 실패했습니다.");
+        });
     }, 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, value.length]);
 
-  const hiddenUids = new Set([...value, ...excludeUids]);
-  const visibleResults = results.filter((s) => !hiddenUids.has(s.uid));
+  const hiddenUids = new Set(value);
+  // 입력이 비면 직전 결과를 숨긴다 (effect에서 동기 setState 하지 않기 위해 렌더에서 처리)
+  const visibleResults = query.trim()
+    ? results.filter((s) => !hiddenUids.has(s.uid))
+    : [];
 
   function pick(spot: SpotAdminSearchResult) {
     setStaged((prev) => [...prev, spot]);
@@ -78,6 +92,7 @@ export function SpotPicker({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="스팟 이름 검색…"
         />
+        {query.trim() && error && <p className="mt-1 text-xs text-destructive">{error}</p>}
         {visibleResults.length > 0 && (
           <ul className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md max-h-60 overflow-y-auto">
             {visibleResults.map((spot) => (

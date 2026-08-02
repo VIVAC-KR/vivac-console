@@ -68,22 +68,11 @@ export type BusinessInfoDetail = {
   updated_at: string | null;
 };
 
-export type SpotGroupVisibility = "private" | "invite_only" | "public";
+export const SPOT_GROUP_VISIBILITIES = ["private", "invite_only", "public"] as const;
+export type SpotGroupVisibility = (typeof SPOT_GROUP_VISIBILITIES)[number];
 
-export const SPOT_GROUP_VISIBILITIES: SpotGroupVisibility[] = [
-  "private",
-  "invite_only",
-  "public",
-];
-
-export type SpotGroupRole = "viewer" | "contributor" | "editor" | "owner";
-
-export const SPOT_GROUP_ROLES: SpotGroupRole[] = [
-  "viewer",
-  "contributor",
-  "editor",
-  "owner",
-];
+export const SPOT_GROUP_ROLES = ["viewer", "contributor", "editor", "owner"] as const;
+export type SpotGroupRole = (typeof SPOT_GROUP_ROLES)[number];
 
 export type SpotGroupAdminListItem = {
   uid: string;

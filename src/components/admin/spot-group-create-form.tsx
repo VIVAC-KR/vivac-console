@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { SpotPicker } from "@/components/admin/spot-picker";
 import { SPOT_GROUP_VISIBILITIES } from "@/lib/types";
 
@@ -63,14 +63,5 @@ export function SpotGroupCreateForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-sm">{label}</Label>
-      {children}
-    </div>
   );
 }
