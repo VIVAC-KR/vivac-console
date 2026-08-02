@@ -3,10 +3,11 @@
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { StatusBanner } from "@/components/ui/status-banner";
 import { SPOT_GROUP_VISIBILITIES, type SpotGroupAdminDetail } from "@/lib/types";
 
 type FormValues = {
@@ -52,14 +53,7 @@ export function SpotGroupEditForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 rounded-lg border p-5 max-w-2xl">
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
-        >
-          {error}
-        </div>
-      )}
+      <StatusBanner error={error} />
       <Field label="이름 *"><Input {...register("name")} required /></Field>
       <Field label="설명"><Textarea {...register("description")} rows={3} /></Field>
       <Field label="공개범위">
@@ -75,14 +69,5 @@ export function SpotGroupEditForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-sm">{label}</Label>
-      {children}
-    </div>
   );
 }

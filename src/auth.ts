@@ -22,7 +22,11 @@ declare module "next-auth/jwt" {
   }
 }
 
-const API_BASE_URL = process.env.API_BASE_URL;
+function apiBaseUrl(): string {
+  const base = process.env.API_BASE_URL;
+  if (!base) throw new Error("API_BASE_URL is not set");
+  return base;
+}
 
 type BackendAuthResponse = {
   access_token: string;
@@ -37,10 +41,8 @@ type BackendAuthResponse = {
 /** JWT의 exp(초)를 밀리초로 반환. 검증 없이 payload만 디코드한다. */
 function backendTokenExpiry(jwt: string): number {
   try {
-    const payload = JSON.parse(
-      Buffer.from(jwt.split(".")[1], "base64url").toString()
-    );
-    return typeof payload.exp === "number" ? payload.exp * 1000 : 0;
+    const { exp } = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString());
+    return typeof exp === "number" ? exp * 1000 : 0;
   } catch {
     return 0;
   }
@@ -55,14 +57,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       let data: BackendAuthResponse;
       try {
-        const res = await fetch(`${API_BASE_URL}/admin/auth/google`, {
+        const res = await fetch(`${apiBaseUrl()}/admin/auth/google`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id_token: account.id_token }),
         });
         if (!res.ok) return false;
         data = (await res.json()) as BackendAuthResponse;
-      } catch {
+      } catch (err) {
+        // 조용히 false를 돌려주면 "Configuration" 에러만 남아 원인 추적이 불가능하다.
+        console.error("[auth] backend google exchange failed", err);
         return false;
       }
       if (!data.user?.is_staff) return false;

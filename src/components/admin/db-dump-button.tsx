@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/lib/utils";
@@ -17,55 +17,72 @@ type State =
   | { phase: "done"; sizeBytes: number }
   | { phase: "error"; message: string };
 
+/** 백엔드가 준 다운로드 URL 검증 — http(s)가 아니면 이동하지 않는다 */
+function isHttpUrl(url: string) {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function DbDumpButton() {
   const [state, setState] = useState<State>({ phase: "idle" });
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     if (state.phase !== "polling") return;
     const { jobId, startedAt } = state;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    intervalRef.current = setInterval(async () => {
-      if (Date.now() - startedAt > TIMEOUT_MS) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setState({ phase: "error", message: "덤프 생성이 너무 오래 걸립니다. 잠시 후 다시 시도해주세요." });
-        return;
-      }
+    // 전체 시한은 폴링과 별도 타이머로 잰다 — 조회 요청 하나가 영영 안 끝나도 풀린다
+    const deadline = setTimeout(() => {
+      cancelled = true;
+      setState({ phase: "error", message: "덤프 생성이 너무 오래 걸립니다. 잠시 후 다시 시도해주세요." });
+    }, Math.max(0, TIMEOUT_MS - (Date.now() - startedAt)));
 
+    // 응답을 받은 뒤에 다음 tick을 예약한다 — 조회가 느려도 폴링이 겹치지 않는다
+    async function poll() {
       const { data: job, error } = await getDbDumpJob(jobId);
+      if (cancelled) return;
+
       if (error || !job) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
         setState({ phase: "error", message: error ?? "작업 상태 조회 실패" });
         return;
       }
 
       if (job.status === "failed") {
-        if (intervalRef.current) clearInterval(intervalRef.current);
         setState({ phase: "error", message: (job.error ?? "덤프 생성 실패").split("\n")[0] });
         return;
       }
 
       if (job.status === "succeeded") {
-        if (intervalRef.current) clearInterval(intervalRef.current);
+        // 여기부터는 취소하지 않는다 — downloading 전환이 이 effect를 정리시키기 때문
         setState({ phase: "downloading" });
         const { data: download, error: downloadError } = await getDbDumpDownloadUrl(jobId);
         if (downloadError || !download) {
           setState({ phase: "error", message: downloadError ?? "다운로드 URL 발급 실패" });
           return;
         }
+        if (!isHttpUrl(download.download_url)) {
+          setState({ phase: "error", message: "다운로드 URL이 올바르지 않습니다." });
+          return;
+        }
         window.location.href = download.download_url;
         setState({ phase: "done", sizeBytes: job.result?.size_bytes ?? 0 });
+        return;
       }
-    }, POLL_INTERVAL_MS);
+
+      timer = setTimeout(poll, POLL_INTERVAL_MS);
+    }
+
+    timer = setTimeout(poll, POLL_INTERVAL_MS);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      cancelled = true;
+      clearTimeout(timer);
+      clearTimeout(deadline);
     };
   }, [state]);
 
@@ -89,8 +106,7 @@ export function DbDumpButton() {
         {state.phase === "queuing" && "덤프 요청 중…"}
         {state.phase === "polling" && "덤프 생성 중…"}
         {state.phase === "downloading" && "다운로드 준비 중…"}
-        {(state.phase === "idle" || state.phase === "done" || state.phase === "error") &&
-          "DB 덤프 다운로드"}
+        {!isBusy && "DB 덤프 다운로드"}
       </Button>
 
       {state.phase === "done" && (

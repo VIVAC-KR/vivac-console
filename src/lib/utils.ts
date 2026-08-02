@@ -6,13 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes / 1024;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  return `${value.toFixed(1)} ${units[unitIndex]}`;
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = bytes < 1024 ? 0 : Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 4);
+  return `${i ? (bytes / 1024 ** i).toFixed(1) : bytes} ${units[i]}`;
 }
+
+export const fmtDate = (s?: string | null) =>
+  s ? new Date(s).toLocaleDateString("ko-KR") : "-";
+
+export const fmtDateTime = (s?: string | null) =>
+  s ? new Date(s).toLocaleString("ko-KR") : "-";

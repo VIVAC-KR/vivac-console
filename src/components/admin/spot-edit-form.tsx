@@ -3,11 +3,12 @@
 import { useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
+import { StatusBanner } from "@/components/ui/status-banner";
 import { TagsInput } from "@/components/admin/tags-input";
 import { OptionMultiSelect } from "@/components/admin/option-multi-select";
 import type { SpotDetail, SpotOption } from "@/lib/types";
@@ -43,19 +44,13 @@ type FormValues = {
   has_liability_insurance: string;
 };
 
-function arr(v: string[] | null) {
-  return v?.join(", ") ?? "";
-}
-
 function parseArr(v: string): string[] | null {
   const items = v.split(",").map((s) => s.trim()).filter(Boolean);
   return items.length ? items : null;
 }
 
 function parseBool(v: string): boolean | null {
-  if (v === "true") return true;
-  if (v === "false") return false;
-  return null;
+  return v === "true" ? true : v === "false" ? false : null;
 }
 
 function parseNum(v: string): number | null {
@@ -72,7 +67,6 @@ function formatPhoneNumber(value: string): string {
     if (digits.length < 10) return `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`;
     return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
   }
-  if (digits.length < 4) return digits;
   if (digits.length < 7) return digits;
   if (digits.length < 11) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
@@ -202,7 +196,7 @@ export function SpotEditForm({
       is_fee_required: spot.is_fee_required?.toString() ?? "",
       is_pet_allowed: spot.is_pet_allowed?.toString() ?? "",
       pet_policy: spot.pet_policy ?? "",
-      themes: arr(spot.themes),
+      themes: spot.themes?.join(", ") ?? "",
       fire_pit_type: spot.fire_pit_type ?? "",
       amenities: spot.amenities ?? [],
       nearby_facilities: spot.nearby_facilities ?? [],
@@ -254,6 +248,7 @@ export function SpotEditForm({
       });
       if (result) {
         setError(result);
+        pendingStatusRef.current = null;
         return;
       }
       router.push(
@@ -280,19 +275,6 @@ export function SpotEditForm({
     ).catch(() => setIsSearchingAddress(false));
   }
 
-  // 배열 필드용 태그 멀티셀렉트 바인딩 (내부 표현은 쉼표 문자열 유지)
-  // — category/amenities/nearby_facilities/has_equipment_rental는 OptionMultiSelect로 별도 처리
-  const tagsField = (
-    name: Exclude<
-      keyof FormValues,
-      "category" | "amenities" | "nearby_facilities" | "has_equipment_rental"
-    >
-  ) => ({
-    value: parseArr(watch(name)) ?? [],
-    onChange: (v: string[]) =>
-      setValue(name, v.join(", "), { shouldDirty: true }),
-  });
-
   return (
     <form
       onSubmit={handleSubmit(onSubmit, () => {
@@ -308,14 +290,7 @@ export function SpotEditForm({
           </Badge>
         </div>
       )}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
-        >
-          {error}
-        </div>
-      )}
+      <StatusBanner error={error} />
 
       <section className="flex flex-col gap-4 rounded-lg border p-5">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">기본 정보</h2>
@@ -331,7 +306,13 @@ export function SpotEditForm({
             options={fieldOptions.category}
           />
         </Field>
-        <Field label="태그"><TagsInput {...tagsField("themes")} /></Field>
+        {/* 태그는 내부 표현이 쉼표 문자열이라 배열 ↔ 문자열로 변환해 바인딩한다 */}
+        <Field label="태그">
+          <TagsInput
+            value={parseArr(watch("themes")) ?? []}
+            onChange={(v) => setValue("themes", v.join(", "), { shouldDirty: true })}
+          />
+        </Field>
       </section>
 
       <section className="flex flex-col gap-4 rounded-lg border p-5">
@@ -396,18 +377,10 @@ export function SpotEditForm({
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">시설 / 정책</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="유료 여부">
-            <select {...register("is_fee_required")} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">
-              <option value="">-</option>
-              <option value="true">유료</option>
-              <option value="false">무료</option>
-            </select>
+            <BoolSelect trueLabel="유료" falseLabel="무료" {...register("is_fee_required")} />
           </Field>
           <Field label="반려동물 허용">
-            <select {...register("is_pet_allowed")} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">
-              <option value="">-</option>
-              <option value="true">허용</option>
-              <option value="false">불가</option>
-            </select>
+            <BoolSelect trueLabel="허용" falseLabel="불가" {...register("is_pet_allowed")} />
           </Field>
         </div>
         <Field label="반려동물 정책"><Input {...register("pet_policy")} /></Field>
@@ -440,11 +413,7 @@ export function SpotEditForm({
         </Field>
         <Field label="특이사항"><Textarea {...register("features")} rows={3} /></Field>
         <Field label="배상책임보험">
-          <select {...register("has_liability_insurance")} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">
-            <option value="">-</option>
-            <option value="true">가입</option>
-            <option value="false">미가입</option>
-          </select>
+          <BoolSelect trueLabel="가입" falseLabel="미가입" {...register("has_liability_insurance")} />
         </Field>
       </section>
 
@@ -485,23 +454,18 @@ export function SpotEditForm({
   );
 }
 
-function Field({
-  label,
-  extra,
-  children,
-}: {
-  label: string;
-  extra?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+/** 미지정("")/true/false 3값 선택 — 라벨만 다르다 */
+function BoolSelect({
+  trueLabel,
+  falseLabel,
+  ...props
+}: { trueLabel: string; falseLabel: string } & React.ComponentProps<"select">) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm">{label}</Label>
-        {extra}
-      </div>
-      {children}
-    </div>
+    <select {...props} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm">
+      <option value="">-</option>
+      <option value="true">{trueLabel}</option>
+      <option value="false">{falseLabel}</option>
+    </select>
   );
 }
 

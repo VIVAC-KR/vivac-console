@@ -11,7 +11,7 @@ export function FacetFilter({
 }: {
   label: string;
   param: string;
-  options: string[];
+  options: readonly string[];
   value?: string;
 }) {
   const router = useRouter();
@@ -23,6 +23,9 @@ export function FacetFilter({
     if (v) next.set(param, v);
     else next.delete(param);
     next.set("page", "1");
+    // 1회성 배너 파라미터는 필터를 바꿀 때 따라오면 안 된다
+    next.delete("saved");
+    next.delete("error");
     router.push(`${pathname}?${next.toString()}`);
   }
 

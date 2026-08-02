@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { apiFetch, apiList } from "@/lib/api";
+import { listQuery, PAGE_SIZE } from "@/lib/list-query";
+import { fmtDate } from "@/lib/utils";
 import {
+  EmptyRow,
   Table,
   TableBody,
   TableCell,
@@ -10,11 +13,11 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Pager } from "@/components/ui/pager";
+import { StatusBanner } from "@/components/ui/status-banner";
 import { ClickableRow } from "@/components/admin/clickable-row";
 import { FacetFilter } from "@/components/admin/facet-filter";
 import { ChevronRight } from "lucide-react";
-
-const PAGE_SIZE = 25;
 
 // 멀티 필터 설정 — 여기에 { param, label } 추가하면 필터·드롭다운이 자동으로 붙는다.
 // (백엔드 _FILTERABLE 화이트리스트에도 동일 param을 추가해야 함)
@@ -31,22 +34,21 @@ type SpotListItem = {
   source: string | null;
   region_province: string | null;
   region_city: string | null;
-  rating_avg: number;
+  rating_avg: number | null;
   review_count: number;
   updated_at: string | null;
 };
 
-type SearchParams = Promise<Record<string, string | undefined>>;
-
-export default async function SpotsPage({ searchParams }: { searchParams: SearchParams }) {
-  const sp = await searchParams;
-  const sort = sp.sort ?? "updated_at";
-  const order = sp.order ?? "desc";
+export default async function SpotsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { sp, sort, order, page, start, end, href, sortLink, sortIndicator } = listQuery(
+    await searchParams
+  );
   const q = sp.q;
   const assignedToUid = sp.assigned_to_uid;
-  const saved = sp.saved;
-  const currentPage = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
-  const start = (currentPage - 1) * PAGE_SIZE;
 
   // 각 패싯의 옵션(distinct) 병렬 로드 (실패해도 빈 목록으로 degrade)
   const facetOptions = await Promise.all(
@@ -61,7 +63,7 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
 
   const { data: spots, total } = await apiList<SpotListItem>("/internal/spots", {
     _start: start,
-    _end: start + PAGE_SIZE,
+    _end: end,
     _sort: sort,
     _order: order,
     title_like: q || undefined,
@@ -72,32 +74,9 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const hasActiveFilters = !!(q || assignedToUid || Object.values(filterValues).some(Boolean));
 
-  // 현재 정렬/검색/필터를 보존하며 링크 쿼리스트링 생성
-  function buildQuery(overrides: Record<string, string>) {
-    const params = new URLSearchParams();
-    const merged = { sort, order, q: q ?? "", assigned_to_uid: assignedToUid ?? "", ...filterValues, ...overrides };
-    for (const [k, v] of Object.entries(merged)) if (v) params.set(k, String(v));
-    const s = params.toString();
-    return s ? `?${s}` : "";
-  }
-
-  function sortLink(col: string) {
-    const nextOrder = sort === col && order === "asc" ? "desc" : "asc";
-    return buildQuery({ sort: col, order: nextOrder, page: "1" });
-  }
-
-  function sortIndicator(col: string) {
-    if (sort !== col) return null;
-    return order === "asc" ? " ↑" : " ↓";
-  }
-
   return (
     <div className="flex flex-col gap-6">
-      {saved && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
-          저장되었습니다.
-        </div>
-      )}
+      <StatusBanner saved={sp.saved} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -113,6 +92,10 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
           <form className="w-full sm:w-auto">
             <input type="hidden" name="sort" value={sort} />
             <input type="hidden" name="order" value={order} />
+            {/* My Queue에서 검색해도 담당자 필터가 유지되도록 함께 넘긴다 */}
+            {assignedToUid && (
+              <input type="hidden" name="assigned_to_uid" value={assignedToUid} />
+            )}
             {FACETS.map((f) => (
               <input key={f.param} type="hidden" name={f.param} value={filterValues[f.param] ?? ""} />
             ))}
@@ -162,45 +145,29 @@ export default async function SpotsPage({ searchParams }: { searchParams: Search
                 </TableCell>
                 <TableCell>{spot.region_province ?? "-"}</TableCell>
                 <TableCell>{spot.region_city ?? "-"}</TableCell>
-                <TableCell>{spot.rating_avg.toFixed(1)}</TableCell>
+                <TableCell>{spot.rating_avg?.toFixed(1) ?? "-"}</TableCell>
                 <TableCell>{spot.review_count}</TableCell>
                 <TableCell className="text-zinc-500 text-xs">
-                  {spot.updated_at ? new Date(spot.updated_at).toLocaleDateString("ko-KR") : "-"}
+                  {fmtDate(spot.updated_at)}
                 </TableCell>
                 <TableCell className="w-8 text-right">
-                  <Link href={`/spots/${spot.uid}/edit`} aria-label="편집" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+                  {/* 행 클릭 외에 키보드/새 탭으로도 갈 수 있는 실제 링크 */}
+                  <Link
+                    href={`/spots/${spot.uid}/edit`}
+                    aria-label="편집"
+                    className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
                     <ChevronRight className="size-4 inline" />
                   </Link>
                 </TableCell>
               </ClickableRow>
             ))}
-            {spots.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center text-zinc-400 py-12">
-                  데이터 없음
-                </TableCell>
-              </TableRow>
-            )}
+            {spots.length === 0 && <EmptyRow colSpan={9} />}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center gap-2 text-sm">
-          {currentPage > 1 && (
-            <Link href={buildQuery({ page: String(currentPage - 1) })} className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900">
-              이전
-            </Link>
-          )}
-          <span className="text-zinc-500">{currentPage} / {totalPages}</span>
-          {currentPage < totalPages && (
-            <Link href={buildQuery({ page: String(currentPage + 1) })} className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900">
-              다음
-            </Link>
-          )}
-        </div>
-      )}
+      <Pager page={page} totalPages={totalPages} href={(p) => href({ page: String(p) })} />
     </div>
   );
 }

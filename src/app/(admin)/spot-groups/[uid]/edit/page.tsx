@@ -1,6 +1,13 @@
-import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, apiMutate, apiCreate, apiDelete, ApiError } from "@/lib/api";
+import {
+  apiFetch,
+  apiFetchOr404,
+  apiMutate,
+  apiCreate,
+  apiDelete,
+  redirectResult,
+} from "@/lib/api";
+import { fmtDate } from "@/lib/utils";
 import {
   SPOT_GROUP_ROLES,
   type SpotGroupAdminDetail,
@@ -8,6 +15,7 @@ import {
   type SpotGroupSpotItem,
 } from "@/lib/types";
 import {
+  EmptyRow,
   Table,
   TableBody,
   TableCell,
@@ -19,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Pager } from "@/components/ui/pager";
+import { StatusBanner } from "@/components/ui/status-banner";
 import { CopyButton } from "@/components/admin/copy-button";
 import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
 import { SpotGroupEditForm } from "@/components/admin/spot-group-edit-form";
@@ -37,11 +47,8 @@ async function saveGroupMeta(
 async function deleteGroupAction(uid: string) {
   "use server";
   const error = await apiDelete(`/internal/groups/${encodeURIComponent(uid)}`);
-  redirect(
-    error
-      ? `/spot-groups/${uid}/edit?error=${encodeURIComponent(error)}`
-      : "/spot-groups?saved=1"
-  );
+  // 삭제 성공 시엔 상세가 사라지므로 목록으로 돌아간다.
+  redirectResult(error ? `/spot-groups/${uid}/edit` : "/spot-groups", error);
 }
 
 async function addMemberAction(uid: string, formData: FormData) {
@@ -52,11 +59,7 @@ async function addMemberAction(uid: string, formData: FormData) {
     user_uid,
     role,
   });
-  redirect(
-    error
-      ? `/spot-groups/${uid}/edit?error=${encodeURIComponent(error)}`
-      : `/spot-groups/${uid}/edit?saved=1`
-  );
+  redirectResult(`/spot-groups/${uid}/edit`, error);
 }
 
 async function updateMemberRoleAction(uid: string, userUid: string, formData: FormData) {
@@ -66,11 +69,7 @@ async function updateMemberRoleAction(uid: string, userUid: string, formData: Fo
     `/internal/groups/${encodeURIComponent(uid)}/members/${encodeURIComponent(userUid)}`,
     { role }
   );
-  redirect(
-    error
-      ? `/spot-groups/${uid}/edit?error=${encodeURIComponent(error)}`
-      : `/spot-groups/${uid}/edit?saved=1`
-  );
+  redirectResult(`/spot-groups/${uid}/edit`, error);
 }
 
 async function removeMemberAction(uid: string, userUid: string) {
@@ -78,22 +77,18 @@ async function removeMemberAction(uid: string, userUid: string) {
   const error = await apiDelete(
     `/internal/groups/${encodeURIComponent(uid)}/members/${encodeURIComponent(userUid)}`
   );
-  redirect(
-    error
-      ? `/spot-groups/${uid}/edit?error=${encodeURIComponent(error)}`
-      : `/spot-groups/${uid}/edit?saved=1`
-  );
+  redirectResult(`/spot-groups/${uid}/edit`, error);
 }
 
-async function removeSpotAction(uid: string, spotUid: string) {
+async function removeSpotAction(uid: string, spotUid: string, spotsOffset: number) {
   "use server";
   const error = await apiDelete(
     `/internal/groups/${encodeURIComponent(uid)}/spots/${encodeURIComponent(spotUid)}`
   );
-  redirect(
+  // 보고 있던 스팟 페이지를 유지한다 (제거할 때마다 1페이지로 튕기지 않게).
+  redirectResult(
+    `/spot-groups/${uid}/edit${spotsOffset ? `?spots_offset=${spotsOffset}` : ""}`,
     error
-      ? `/spot-groups/${uid}/edit?error=${encodeURIComponent(error)}`
-      : `/spot-groups/${uid}/edit?saved=1`
   );
 }
 
@@ -107,15 +102,16 @@ export default async function SpotGroupEditPage({
   const { uid } = await params;
   const encodedUid = encodeURIComponent(uid);
   const { saved, error, spots_offset } = await searchParams;
-  const spotsOffset = Math.max(0, parseInt(spots_offset ?? "0", 10) || 0);
 
-  let group: SpotGroupAdminDetail;
-  try {
-    group = await apiFetch<SpotGroupAdminDetail>(`/internal/groups/${encodedUid}`);
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) notFound();
-    throw err;
-  }
+  const group = await apiFetchOr404<SpotGroupAdminDetail>(`/internal/groups/${encodedUid}`);
+
+  // 스팟을 지워 페이지 수가 줄어도 빈 화면에 갇히지 않도록 마지막 페이지로 당긴다
+  const lastOffset =
+    Math.max(0, Math.ceil(group.spot_count / SPOTS_PAGE_SIZE) - 1) * SPOTS_PAGE_SIZE;
+  const spotsOffset = Math.min(
+    Math.max(0, parseInt(spots_offset ?? "0", 10) || 0),
+    lastOffset
+  );
 
   const [members, spots] = await Promise.all([
     apiFetch<SpotGroupAdminMemberOut[]>(`/internal/groups/${encodedUid}/members`),
@@ -129,19 +125,7 @@ export default async function SpotGroupEditPage({
 
   return (
     <div className="flex flex-col gap-6">
-      {saved && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
-          저장되었습니다.
-        </div>
-      )}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
-        >
-          {error}
-        </div>
-      )}
+      <StatusBanner saved={saved} error={error} />
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -227,7 +211,7 @@ export default async function SpotGroupEditPage({
                       </form>
                     </TableCell>
                     <TableCell className="text-zinc-500 text-xs">
-                      {member.created_at ? new Date(member.created_at).toLocaleDateString("ko-KR") : "-"}
+                      {fmtDate(member.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <ConfirmActionButton
@@ -240,13 +224,7 @@ export default async function SpotGroupEditPage({
                   </TableRow>
                 );
               })}
-              {members.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-zinc-400 py-8">
-                    멤버 없음
-                  </TableCell>
-                </TableRow>
-              )}
+              {members.length === 0 && <EmptyRow colSpan={5}>멤버 없음</EmptyRow>}
             </TableBody>
           </Table>
         </div>
@@ -271,7 +249,7 @@ export default async function SpotGroupEditPage({
             </TableHeader>
             <TableBody>
               {spots.map((spot) => {
-                const removeSpotForSpot = removeSpotAction.bind(null, uid, spot.uid);
+                const removeSpotForSpot = removeSpotAction.bind(null, uid, spot.uid, spotsOffset);
                 return (
                   <TableRow key={spot.uid}>
                     <TableCell>
@@ -293,7 +271,7 @@ export default async function SpotGroupEditPage({
                     </TableCell>
                     <TableCell className="font-mono text-xs text-zinc-500">{spot.added_by_uid}</TableCell>
                     <TableCell className="text-zinc-500 text-xs">
-                      {spot.added_at ? new Date(spot.added_at).toLocaleDateString("ko-KR") : "-"}
+                      {fmtDate(spot.added_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <ConfirmActionButton
@@ -306,37 +284,16 @@ export default async function SpotGroupEditPage({
                   </TableRow>
                 );
               })}
-              {spots.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-zinc-400 py-8">
-                    스팟 없음
-                  </TableCell>
-                </TableRow>
-              )}
+              {spots.length === 0 && <EmptyRow colSpan={6}>스팟 없음</EmptyRow>}
             </TableBody>
           </Table>
         </div>
 
-        {(spotsOffset > 0 || spots.length === SPOTS_PAGE_SIZE) && (
-          <div className="flex items-center gap-2 text-sm">
-            {spotsOffset > 0 && (
-              <Link
-                href={`/spot-groups/${uid}/edit?spots_offset=${Math.max(0, spotsOffset - SPOTS_PAGE_SIZE)}`}
-                className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900"
-              >
-                이전
-              </Link>
-            )}
-            {spots.length === SPOTS_PAGE_SIZE && (
-              <Link
-                href={`/spot-groups/${uid}/edit?spots_offset=${spotsOffset + SPOTS_PAGE_SIZE}`}
-                className="px-3 py-1 border rounded hover:bg-zinc-50 dark:hover:bg-zinc-900"
-              >
-                다음
-              </Link>
-            )}
-          </div>
-        )}
+        <Pager
+          page={Math.floor(spotsOffset / SPOTS_PAGE_SIZE) + 1}
+          totalPages={Math.ceil(group.spot_count / SPOTS_PAGE_SIZE)}
+          href={(p) => `/spot-groups/${uid}/edit?spots_offset=${(p - 1) * SPOTS_PAGE_SIZE}`}
+        />
       </section>
     </div>
   );

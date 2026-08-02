@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, apiCreate, apiDelete } from "@/lib/api";
+import { apiFetch, apiCreate, apiDelete, redirectResult } from "@/lib/api";
 import type { SpotOption, SpotOptionField } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
+  EmptyRow,
   Table,
   TableBody,
   TableCell,
@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { DeleteOptionButton } from "@/components/admin/delete-option-button";
+import { StatusBanner } from "@/components/ui/status-banner";
+import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
 
 const FIELD_TABS: { field: SpotOptionField; label: string }[] = [
   { field: "category", label: "카테고리" },
@@ -29,11 +30,7 @@ async function createOptionAction(formData: FormData) {
   const code = String(formData.get("code") ?? "").trim();
   const label_ko = String(formData.get("label_ko") ?? "").trim();
   const error = await apiCreate("/internal/spot-options", { field, code, label_ko });
-  redirect(
-    error
-      ? `/spot-options?field=${field}&error=${encodeURIComponent(error)}`
-      : `/spot-options?field=${field}&saved=1`
-  );
+  redirectResult(`/spot-options?field=${field}`, error);
 }
 
 async function deleteOptionAction(field: string, code: string) {
@@ -41,11 +38,7 @@ async function deleteOptionAction(field: string, code: string) {
   const error = await apiDelete(
     `/internal/spot-options/${field}/${encodeURIComponent(code)}`
   );
-  redirect(
-    error
-      ? `/spot-options?field=${field}&error=${encodeURIComponent(error)}`
-      : `/spot-options?field=${field}&saved=1`
-  );
+  redirectResult(`/spot-options?field=${field}`, error);
 }
 
 export default async function SpotOptionsPage({
@@ -60,23 +53,10 @@ export default async function SpotOptionsPage({
   const options = await apiFetch<SpotOption[]>(
     `/internal/spot-options?field=${field}`
   );
-  const deleteOptionActionForField = deleteOptionAction.bind(null, field);
 
   return (
     <div className="flex flex-col gap-6">
-      {saved && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
-          저장되었습니다.
-        </div>
-      )}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive break-all"
-        >
-          {error}
-        </div>
-      )}
+      <StatusBanner saved={saved} error={error} />
 
       <h1 className="text-xl font-semibold">
         Field Options <span className="text-zinc-400 text-base font-normal">{options.length}개</span>
@@ -140,17 +120,14 @@ export default async function SpotOptionsPage({
                 <TableCell className="font-mono text-xs text-zinc-500">{o.code}</TableCell>
                 <TableCell>{o.label_ko}</TableCell>
                 <TableCell className="text-right">
-                  <DeleteOptionButton code={o.code} action={deleteOptionActionForField} />
+                  <ConfirmActionButton
+                    confirmMessage={`"${o.code}" 항목을 삭제하시겠습니까?\n모든 스팟에서도 함께 제거됩니다.`}
+                    action={deleteOptionAction.bind(null, field, o.code)}
+                  />
                 </TableCell>
               </TableRow>
             ))}
-            {options.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-zinc-400 py-12">
-                  등록된 항목 없음
-                </TableCell>
-              </TableRow>
-            )}
+            {options.length === 0 && <EmptyRow colSpan={3}>등록된 항목 없음</EmptyRow>}
           </TableBody>
         </Table>
       </div>

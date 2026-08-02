@@ -13,7 +13,11 @@ export function ClickableRow({
   const router = useRouter();
   return (
     <TableRow
-      onClick={() => router.push(href)}
+      onClick={(e) => {
+        // 행 안의 링크(제목/화살표)는 다른 곳으로 가므로, 링크 클릭이면 행 이동을 하지 않는다
+        if ((e.target as HTMLElement).closest("a")) return;
+        router.push(href);
+      }}
       className="cursor-pointer"
     >
       {children}
