@@ -2,3 +2,7 @@
 .env.development.local
 .env.production.local
 node_modules
+
+# vivac-cowork shared docs (symlinks)
+docs
+.claude/rules/vivac-docs-authoring.md
