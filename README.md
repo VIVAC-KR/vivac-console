@@ -1,5 +1,7 @@
 # vivac-console
 
+> `docs/`는 `vivac-cowork` 저장소의 공유 문서 폴더를 가리키는 로컬 심볼릭 링크입니다(git에는 존재하지 않음). 설정 방법은 `vivac-cowork/SYMLINK-SETUP.md` 참고.
+
 VIVAC 내부 운영팀이 사용하는 **운영 콘솔(Operations Console)** 입니다.
 
 ## 무엇을 하나요
