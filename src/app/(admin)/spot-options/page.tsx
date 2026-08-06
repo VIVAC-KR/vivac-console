@@ -30,15 +30,15 @@ async function createOptionAction(formData: FormData) {
   const code = String(formData.get("code") ?? "").trim();
   const label_ko = String(formData.get("label_ko") ?? "").trim();
   const error = await apiCreate("/internal/spot-options", { field, code, label_ko });
-  redirectResult(`/spot-options?field=${field}`, error);
+  redirectResult(`/spot-options?field=${encodeURIComponent(field)}`, error);
 }
 
 async function deleteOptionAction(field: string, code: string) {
   "use server";
   const error = await apiDelete(
-    `/internal/spot-options/${field}/${encodeURIComponent(code)}`
+    `/internal/spot-options/${encodeURIComponent(field)}/${encodeURIComponent(code)}`
   );
-  redirectResult(`/spot-options?field=${field}`, error);
+  redirectResult(`/spot-options?field=${encodeURIComponent(field)}`, error);
 }
 
 export default async function SpotOptionsPage({
