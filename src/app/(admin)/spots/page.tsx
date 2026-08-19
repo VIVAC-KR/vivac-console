@@ -7,6 +7,8 @@ import { Pager } from "@/components/ui/pager";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { FacetFilter } from "@/components/admin/facet-filter";
 import { SpotsTable } from "@/components/admin/spots-table";
+import { SpotsBulkProvider } from "@/components/admin/spots-bulk-context";
+import { SpotsBulkIndicator } from "@/components/admin/spots-bulk-indicator";
 import type { SpotListItem } from "@/lib/types";
 
 // 멀티 필터 설정 — 여기에 { param, label } 추가하면 필터·드롭다운이 자동으로 붙는다.
@@ -55,56 +57,60 @@ export default async function SpotsPage({
   const hasActiveFilters = !!(q || assignedToUid || Object.values(filterValues).some(Boolean));
 
   return (
-    <div className="flex flex-col gap-6">
-      <StatusBanner saved={sp.saved} />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          {FACETS.map((f, i) => (
-            <FacetFilter
-              key={f.param}
-              label={f.label}
-              param={f.param}
-              options={facetOptions[i]}
-              value={filterValues[f.param]}
-            />
-          ))}
-          <form className="w-full sm:w-auto">
-            <input type="hidden" name="sort" value={sort} />
-            <input type="hidden" name="order" value={order} />
-            {/* My Queue에서 검색해도 담당자 필터가 유지되도록 함께 넘긴다 */}
-            {assignedToUid && (
-              <input type="hidden" name="assigned_to_uid" value={assignedToUid} />
-            )}
-            {FACETS.map((f) => (
-              <input key={f.param} type="hidden" name={f.param} value={filterValues[f.param] ?? ""} />
+    <SpotsBulkProvider spots={spots}>
+      <div className="flex flex-col gap-6">
+        <StatusBanner saved={sp.saved} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-xl font-semibold">Spots <span className="text-zinc-400 text-base font-normal">{total}개</span></h1>
+            {isSuperuser && <SpotsBulkIndicator />}
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            {FACETS.map((f, i) => (
+              <FacetFilter
+                key={f.param}
+                label={f.label}
+                param={f.param}
+                options={facetOptions[i]}
+                value={filterValues[f.param]}
+              />
             ))}
-            <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
-          </form>
-          {hasActiveFilters && (
-            <Link
-              href="/spots"
-              className="shrink-0 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-            >
-              초기화 ✕
-            </Link>
-          )}
+            <form className="w-full sm:w-auto">
+              <input type="hidden" name="sort" value={sort} />
+              <input type="hidden" name="order" value={order} />
+              {/* My Queue에서 검색해도 담당자 필터가 유지되도록 함께 넘긴다 */}
+              {assignedToUid && (
+                <input type="hidden" name="assigned_to_uid" value={assignedToUid} />
+              )}
+              {FACETS.map((f) => (
+                <input key={f.param} type="hidden" name={f.param} value={filterValues[f.param] ?? ""} />
+              ))}
+              <Input name="q" defaultValue={q} placeholder="이름 검색…" className="w-full sm:w-64" />
+            </form>
+            {hasActiveFilters && (
+              <Link
+                href="/spots"
+                className="shrink-0 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                초기화 ✕
+              </Link>
+            )}
+          </div>
         </div>
+
+        <SpotsTable
+          isSuperuser={isSuperuser}
+          sortLinks={{
+            title: { href: sortLink("title"), indicator: sortIndicator("title") },
+            region_province: { href: sortLink("region_province"), indicator: sortIndicator("region_province") },
+            rating_avg: { href: sortLink("rating_avg"), indicator: sortIndicator("rating_avg") },
+            review_count: { href: sortLink("review_count"), indicator: sortIndicator("review_count") },
+            updated_at: { href: sortLink("updated_at"), indicator: sortIndicator("updated_at") },
+          }}
+        />
+
+        <Pager page={page} totalPages={totalPages} href={(p) => href({ page: String(p) })} />
       </div>
-
-      <SpotsTable
-        spots={spots}
-        isSuperuser={isSuperuser}
-        sortLinks={{
-          title: { href: sortLink("title"), indicator: sortIndicator("title") },
-          region_province: { href: sortLink("region_province"), indicator: sortIndicator("region_province") },
-          rating_avg: { href: sortLink("rating_avg"), indicator: sortIndicator("rating_avg") },
-          review_count: { href: sortLink("review_count"), indicator: sortIndicator("review_count") },
-          updated_at: { href: sortLink("updated_at"), indicator: sortIndicator("updated_at") },
-        }}
-      />
-
-      <Pager page={page} totalPages={totalPages} href={(p) => href({ page: String(p) })} />
-    </div>
+    </SpotsBulkProvider>
   );
 }
