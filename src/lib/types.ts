@@ -8,6 +8,18 @@ export const PIPELINE_STATUSES = [
 ] as const;
 export type PipelineStatus = (typeof PIPELINE_STATUSES)[number];
 
+export type SpotListItem = {
+  uid: string;
+  title: string;
+  pipeline_status: string | null;
+  source: string | null;
+  region_province: string | null;
+  region_city: string | null;
+  rating_avg: number | null;
+  review_count: number;
+  updated_at: string | null;
+};
+
 export type SpotDetail = {
   uid: string;
   title: string;
