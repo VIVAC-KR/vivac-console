@@ -1,23 +1,12 @@
 import Link from "next/link";
 import { apiFetch, apiList } from "@/lib/api";
 import { listQuery, PAGE_SIZE } from "@/lib/list-query";
-import { fmtDate } from "@/lib/utils";
-import {
-  EmptyRow,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { auth } from "@/auth";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Pager } from "@/components/ui/pager";
 import { StatusBanner } from "@/components/ui/status-banner";
-import { ClickableRow } from "@/components/admin/clickable-row";
 import { FacetFilter } from "@/components/admin/facet-filter";
-import { ChevronRight } from "lucide-react";
+import { SpotsTable } from "@/components/admin/spots-table";
 
 // 멀티 필터 설정 — 여기에 { param, label } 추가하면 필터·드롭다운이 자동으로 붙는다.
 // (백엔드 _FILTERABLE 화이트리스트에도 동일 param을 추가해야 함)
@@ -49,6 +38,8 @@ export default async function SpotsPage({
   );
   const q = sp.q;
   const assignedToUid = sp.assigned_to_uid;
+  const session = await auth();
+  const isSuperuser = session?.user?.staffRole === "superuser";
 
   // 각 패싯의 옵션(distinct) 병렬 로드 (실패해도 빈 목록으로 degrade)
   const facetOptions = await Promise.all(
@@ -112,60 +103,17 @@ export default async function SpotsPage({
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead><Link href={sortLink("title")}>이름{sortIndicator("title")}</Link></TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>소스</TableHead>
-              <TableHead><Link href={sortLink("region_province")}>도/광역시{sortIndicator("region_province")}</Link></TableHead>
-              <TableHead>시/군/구</TableHead>
-              <TableHead><Link href={sortLink("rating_avg")}>평점{sortIndicator("rating_avg")}</Link></TableHead>
-              <TableHead><Link href={sortLink("review_count")}>리뷰{sortIndicator("review_count")}</Link></TableHead>
-              <TableHead><Link href={sortLink("updated_at")}>수정일{sortIndicator("updated_at")}</Link></TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {spots.map((spot) => (
-              <ClickableRow key={spot.uid} href={`/spots/${spot.uid}/edit`}>
-                <TableCell className="font-medium">{spot.title}</TableCell>
-                <TableCell>
-                  {spot.pipeline_status ? (
-                    <Badge variant={spot.pipeline_status === "ENRICHED" ? "default" : "outline"}>
-                      {spot.pipeline_status}
-                    </Badge>
-                  ) : (
-                    <span className="text-zinc-400">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {spot.source ? <Badge variant="secondary">{spot.source}</Badge> : <span className="text-zinc-400">-</span>}
-                </TableCell>
-                <TableCell>{spot.region_province ?? "-"}</TableCell>
-                <TableCell>{spot.region_city ?? "-"}</TableCell>
-                <TableCell>{spot.rating_avg?.toFixed(1) ?? "-"}</TableCell>
-                <TableCell>{spot.review_count}</TableCell>
-                <TableCell className="text-zinc-500 text-xs">
-                  {fmtDate(spot.updated_at)}
-                </TableCell>
-                <TableCell className="w-8 text-right">
-                  {/* 행 클릭 외에 키보드/새 탭으로도 갈 수 있는 실제 링크 */}
-                  <Link
-                    href={`/spots/${spot.uid}/edit`}
-                    aria-label="편집"
-                    className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  >
-                    <ChevronRight className="size-4 inline" />
-                  </Link>
-                </TableCell>
-              </ClickableRow>
-            ))}
-            {spots.length === 0 && <EmptyRow colSpan={9} />}
-          </TableBody>
-        </Table>
-      </div>
+      <SpotsTable
+        spots={spots}
+        isSuperuser={isSuperuser}
+        sortLinks={{
+          title: { href: sortLink("title"), indicator: sortIndicator("title") },
+          region_province: { href: sortLink("region_province"), indicator: sortIndicator("region_province") },
+          rating_avg: { href: sortLink("rating_avg"), indicator: sortIndicator("rating_avg") },
+          review_count: { href: sortLink("review_count"), indicator: sortIndicator("review_count") },
+          updated_at: { href: sortLink("updated_at"), indicator: sortIndicator("updated_at") },
+        }}
+      />
 
       <Pager page={page} totalPages={totalPages} href={(p) => href({ page: String(p) })} />
     </div>

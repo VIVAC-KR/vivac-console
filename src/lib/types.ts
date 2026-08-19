@@ -1,3 +1,13 @@
+export const PIPELINE_STATUSES = [
+  "RAW",
+  "ENRICHED",
+  "CURATED",
+  "REVIEWED",
+  "PUBLISHED",
+  "REJECTED",
+] as const;
+export type PipelineStatus = (typeof PIPELINE_STATUSES)[number];
+
 export type SpotDetail = {
   uid: string;
   title: string;
