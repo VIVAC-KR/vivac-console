@@ -126,25 +126,23 @@ export const apiCreate = async (path: string, data: Record<string, unknown>) =>
 /** DELETE — 성공 시 null, 실패 시 사람이 읽을 에러 메시지 */
 export const apiDelete = async (path: string) => errorOf(await send("DELETE", path));
 
-/** POST — 생성된 리소스의 응답 바디가 필요한 경우 */
-export async function apiCreateWithResult<T>(
+async function sendWithResult<T>(
+  method: string,
   path: string,
   data: Record<string, unknown>
 ): Promise<{ data: T | null; error: string | null }> {
-  const res = await send("POST", path, data);
+  const res = await send(method, path, data);
   if (typeof res === "string") return { data: null, error: res };
   return { data: (await res.json()) as T, error: null };
 }
 
+/** POST — 생성된 리소스의 응답 바디가 필요한 경우 */
+export const apiCreateWithResult = <T>(path: string, data: Record<string, unknown>) =>
+  sendWithResult<T>("POST", path, data);
+
 /** PATCH — 응답 바디가 필요한 경우 (예: job_id를 돌려주는 비동기 작업 큐잉) */
-export async function apiMutateWithResult<T>(
-  path: string,
-  data: Record<string, unknown>
-): Promise<{ data: T | null; error: string | null }> {
-  const res = await send("PATCH", path, data);
-  if (typeof res === "string") return { data: null, error: res };
-  return { data: (await res.json()) as T, error: null };
-}
+export const apiMutateWithResult = <T>(path: string, data: Record<string, unknown>) =>
+  sendWithResult<T>("PATCH", path, data);
 
 /** server action 공통 마무리 — 결과를 쿼리스트링에 실어 원래 화면으로 돌려보낸다. */
 export function redirectResult(base: string, error: string | null): never {

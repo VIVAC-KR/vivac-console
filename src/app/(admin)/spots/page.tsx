@@ -7,6 +7,7 @@ import { Pager } from "@/components/ui/pager";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { FacetFilter } from "@/components/admin/facet-filter";
 import { SpotsTable } from "@/components/admin/spots-table";
+import type { SpotListItem } from "@/lib/types";
 
 // 멀티 필터 설정 — 여기에 { param, label } 추가하면 필터·드롭다운이 자동으로 붙는다.
 // (백엔드 _FILTERABLE 화이트리스트에도 동일 param을 추가해야 함)
@@ -15,18 +16,6 @@ const FACETS = [
   { param: "region_province", label: "도/광역시" },
   { param: "source", label: "소스" },
 ] as const;
-
-type SpotListItem = {
-  uid: string;
-  title: string;
-  pipeline_status: string | null;
-  source: string | null;
-  region_province: string | null;
-  region_city: string | null;
-  rating_avg: number | null;
-  review_count: number;
-  updated_at: string | null;
-};
 
 export default async function SpotsPage({
   searchParams,

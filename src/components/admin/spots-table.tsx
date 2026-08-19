@@ -18,23 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClickableRow } from "@/components/admin/clickable-row";
 import { fmtDate } from "@/lib/utils";
-import { PIPELINE_STATUSES } from "@/lib/types";
+import { PIPELINE_STATUSES, type SpotListItem } from "@/lib/types";
 import { queueBulkStatus, getBulkStatusJob } from "@/lib/actions/spot-status";
 
 const POLL_INTERVAL_MS = 2500;
 const TIMEOUT_MS = 5 * 60 * 1000;
-
-type SpotListItem = {
-  uid: string;
-  title: string;
-  pipeline_status: string | null;
-  source: string | null;
-  region_province: string | null;
-  region_city: string | null;
-  rating_avg: number | null;
-  review_count: number;
-  updated_at: string | null;
-};
 
 type BulkState =
   | { phase: "idle" }
@@ -58,6 +46,16 @@ export function SpotsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [target, setTarget] = useState<string>(PIPELINE_STATUSES[0]);
   const [bulk, setBulk] = useState<BulkState>({ phase: "idle" });
+
+  // 페이지/정렬/필터가 바뀌어 spots가 교체되면, 더 이상 화면에 없는 uid는 선택에서 제거한다
+  // (안 그러면 화면 밖 spot이 일괄 변경 대상에 남아있게 된다)
+  useEffect(() => {
+    setSelected((prev) => {
+      const visible = new Set(spots.map((s) => s.uid));
+      const next = new Set([...prev].filter((uid) => visible.has(uid)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [spots]);
 
   useEffect(() => {
     if (bulk.phase !== "polling") return;
