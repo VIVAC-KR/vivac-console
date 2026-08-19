@@ -147,6 +147,7 @@ export default async function SpotEditPage({
       <SpotEditForm
         spot={spot}
         currentUserId={session?.user?.id}
+        isSuperuser={session?.user?.staffRole === "superuser"}
         fieldOptions={fieldOptions}
         onSave={saveSpot}
       />

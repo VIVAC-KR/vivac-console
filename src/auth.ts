@@ -3,12 +3,15 @@ import { getToken } from "next-auth/jwt";
 import { headers } from "next/headers";
 import authConfig from "@/auth.config";
 
+export type StaffRole = "staff" | "manager" | "superuser";
+
 declare module "next-auth" {
   interface Session {
     expired?: boolean;
     user: {
       id?: string;
       isStaff?: boolean;
+      staffRole?: StaffRole;
     } & DefaultSession["user"];
   }
 }
@@ -18,6 +21,7 @@ declare module "next-auth/jwt" {
     accessToken?: string;
     userId?: string;
     isStaff?: boolean;
+    staffRole?: StaffRole;
     accessTokenExpires?: number;
   }
 }
@@ -35,6 +39,7 @@ type BackendAuthResponse = {
     email: string;
     name?: string;
     is_staff: boolean;
+    staff_role: StaffRole;
   };
 };
 
@@ -75,6 +80,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         backendAccessToken: data.access_token,
         backendUserId: String(data.user.id),
         isStaff: true,
+        staffRole: data.user.staff_role,
         backendAccessTokenExpires: backendTokenExpiry(data.access_token),
       });
       return true;

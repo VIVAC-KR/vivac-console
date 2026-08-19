@@ -11,7 +11,7 @@ import { Field } from "@/components/ui/field";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { TagsInput } from "@/components/admin/tags-input";
 import { OptionMultiSelect } from "@/components/admin/option-multi-select";
-import type { SpotDetail, SpotOption } from "@/lib/types";
+import { PIPELINE_STATUSES, type SpotDetail, type SpotOption } from "@/lib/types";
 
 type FormValues = {
   title: string;
@@ -149,11 +149,13 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
 export function SpotEditForm({
   spot,
   currentUserId,
+  isSuperuser,
   fieldOptions,
   onSave,
 }: {
   spot: SpotDetail;
   currentUserId?: string;
+  isSuperuser?: boolean;
   fieldOptions: {
     category: SpotOption[];
     amenities: SpotOption[];
@@ -166,6 +168,8 @@ export function SpotEditForm({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [isOverridePending, startOverrideTransition] = useTransition();
+  const [overrideError, setOverrideError] = useState<string | null>(null);
   // 클릭된 버튼(저장/제출/반려)에 따라 함께 보낼 pipeline_status. 각 버튼 onClick에서 세팅.
   const pendingStatusRef = useRef<"CURATED" | "REJECTED" | null>(null);
   // 제출/반려는 ENRICHED 상태 + 내게 할당된 항목에서만 (backend PATCH도 동일하게 강제)
@@ -257,6 +261,19 @@ export function SpotEditForm({
     });
   }
 
+  function handleStatusOverride(next: string) {
+    if (!confirm(`처리 상태를 "${next}"(으)로 변경하시겠습니까?`)) return;
+    setOverrideError(null);
+    startOverrideTransition(async () => {
+      const result = await onSave(spot.uid, { pipeline_status: next });
+      if (result) {
+        setOverrideError(result);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   function handleAddressSearch() {
     setIsSearchingAddress(true);
     openAddressSearch(
@@ -288,6 +305,33 @@ export function SpotEditForm({
           <Badge variant={isReviewQueueItem ? "default" : "secondary"}>
             {spot.pipeline_status}
           </Badge>
+        </div>
+      )}
+      {isSuperuser && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-zinc-500">상태 변경 (SUPERUSER)</span>
+          <select
+            defaultValue=""
+            disabled={isOverridePending}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              handleStatusOverride(e.target.value);
+              e.target.value = "";
+            }}
+            className="h-8 rounded-md border bg-transparent px-2 text-sm"
+          >
+            <option value="" disabled>
+              변경할 상태 선택…
+            </option>
+            {PIPELINE_STATUSES.filter((s) => s !== spot.pipeline_status).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          {overrideError && (
+            <span className="text-xs text-destructive break-all">{overrideError}</span>
+          )}
         </div>
       )}
       <StatusBanner error={error} />

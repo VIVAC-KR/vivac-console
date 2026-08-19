@@ -136,6 +136,16 @@ export async function apiCreateWithResult<T>(
   return { data: (await res.json()) as T, error: null };
 }
 
+/** PATCH — 응답 바디가 필요한 경우 (예: job_id를 돌려주는 비동기 작업 큐잉) */
+export async function apiMutateWithResult<T>(
+  path: string,
+  data: Record<string, unknown>
+): Promise<{ data: T | null; error: string | null }> {
+  const res = await send("PATCH", path, data);
+  if (typeof res === "string") return { data: null, error: res };
+  return { data: (await res.json()) as T, error: null };
+}
+
 /** server action 공통 마무리 — 결과를 쿼리스트링에 실어 원래 화면으로 돌려보낸다. */
 export function redirectResult(base: string, error: string | null): never {
   const sep = base.includes("?") ? "&" : "?";

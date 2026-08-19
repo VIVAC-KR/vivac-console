@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
+import type { StaffRole } from "@/auth";
 
 export default {
   providers: [
@@ -20,11 +21,13 @@ export default {
           backendAccessToken?: string;
           backendUserId?: string;
           isStaff?: boolean;
+          staffRole?: StaffRole;
           backendAccessTokenExpires?: number;
         };
         token.accessToken = u.backendAccessToken;
         token.userId = u.backendUserId;
         token.isStaff = u.isStaff;
+        token.staffRole = u.staffRole;
         token.accessTokenExpires = u.backendAccessTokenExpires;
       }
       return token;
@@ -32,6 +35,7 @@ export default {
     async session({ session, token }) {
       session.user.id = token.userId ?? session.user.id;
       session.user.isStaff = token.isStaff;
+      session.user.staffRole = token.staffRole;
       // 백엔드 토큰이 만료됐으면 세션도 만료로 표시 (proxy가 로그아웃 처리)
       session.expired =
         !token.accessTokenExpires || Date.now() >= token.accessTokenExpires;
