@@ -1,6 +1,6 @@
 "use server";
 
-import { apiCreateWithResult } from "@/lib/api";
+import { apiCreateWithResult, apiDelete } from "@/lib/api";
 import type { ImagePresignResponse, SpotImageOut, SpotImageRole } from "@/lib/types";
 
 /** 1단계: S3 presigned PUT URL 발급 */
@@ -21,5 +21,12 @@ export async function registerSpotImage(
   return apiCreateWithResult<SpotImageOut>(
     `/internal/spots/${encodeURIComponent(uid)}/images`,
     { s3_key: s3Key, role, content_type: contentType }
+  );
+}
+
+/** soft delete — DB row/S3 객체는 남기고 deleted_at만 세팅 (백엔드 VAC-12) */
+export async function deleteSpotImage(uid: string, imageUid: string) {
+  return apiDelete(
+    `/internal/spots/${encodeURIComponent(uid)}/images/${encodeURIComponent(imageUid)}`
   );
 }

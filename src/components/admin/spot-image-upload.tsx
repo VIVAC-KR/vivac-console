@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatBytes } from "@/lib/utils";
-import { presignSpotImage, registerSpotImage } from "@/lib/actions/spot-images";
+import { deleteSpotImage, presignSpotImage, registerSpotImage } from "@/lib/actions/spot-images";
 import type { SpotImageOut, SpotImageRole } from "@/lib/types";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -37,7 +37,8 @@ export function SpotImageUpload({
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [thumbnailId, setThumbnailId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,10 +77,18 @@ export function SpotImageUpload({
     if (errors.length) setFormError(errors.join("\n"));
   }
 
-  // 백엔드에 soft delete API가 아직 없어(VAC-12 후속) 실제 삭제는 보류하고 안내만 표시한다.
-  function handleRequestDelete() {
+  // soft delete — DB row/S3는 남고 목록에서만 빠진다 (VAC-12)
+  async function handleRequestDelete(imageUid: string) {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    setDeleteNotice("사진 삭제 기능은 백엔드 준비 중입니다. 곧 지원될 예정입니다.");
+    setDeleteError(null);
+    setDeletingUid(imageUid);
+    const error = await deleteSpotImage(spotUid, imageUid);
+    setDeletingUid(null);
+    if (error) {
+      setDeleteError(error);
+      return;
+    }
+    setImages((prev) => prev.filter((img) => img.uid !== imageUid));
   }
 
   function removePending(id: string) {
@@ -176,11 +185,16 @@ export function SpotImageUpload({
             )}
             <button
               type="button"
-              onClick={handleRequestDelete}
+              onClick={() => handleRequestDelete(img.uid)}
+              disabled={deletingUid === img.uid}
               aria-label="사진 삭제"
-              className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+              className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-100"
             >
-              <X className="size-3" />
+              {deletingUid === img.uid ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <X className="size-3" />
+              )}
             </button>
           </div>
         ))}
@@ -188,7 +202,7 @@ export function SpotImageUpload({
           <p className="col-span-full text-sm text-zinc-400">등록된 사진 없음</p>
         )}
       </div>
-      {deleteNotice && <p className="text-xs text-zinc-500">{deleteNotice}</p>}
+      {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
 
       <div
         onDragOver={(e) => {
