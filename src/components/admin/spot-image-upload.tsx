@@ -37,6 +37,7 @@ export function SpotImageUpload({
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [thumbnailId, setThumbnailId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -73,6 +74,12 @@ export function SpotImageUpload({
 
     if (accepted.length) setPending((prev) => [...prev, ...accepted]);
     if (errors.length) setFormError(errors.join("\n"));
+  }
+
+  // 백엔드에 soft delete API가 아직 없어(VAC-12 후속) 실제 삭제는 보류하고 안내만 표시한다.
+  function handleRequestDelete() {
+    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    setDeleteNotice("사진 삭제 기능은 백엔드 준비 중입니다. 곧 지원될 예정입니다.");
   }
 
   function removePending(id: string) {
@@ -156,7 +163,10 @@ export function SpotImageUpload({
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
         {images.map((img) => (
-          <div key={img.uid} className="relative aspect-square overflow-hidden rounded-md border">
+          <div
+            key={img.uid}
+            className="group relative aspect-square overflow-hidden rounded-md border"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element -- CDN 도메인이 next.config에 등록돼 있지 않음 */}
             <img src={img.url} alt="" className="h-full w-full object-cover" />
             {img.uid === thumbUid && (
@@ -164,12 +174,21 @@ export function SpotImageUpload({
                 대표
               </span>
             )}
+            <button
+              type="button"
+              onClick={handleRequestDelete}
+              aria-label="사진 삭제"
+              className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <X className="size-3" />
+            </button>
           </div>
         ))}
         {images.length === 0 && (
           <p className="col-span-full text-sm text-zinc-400">등록된 사진 없음</p>
         )}
       </div>
+      {deleteNotice && <p className="text-xs text-zinc-500">{deleteNotice}</p>}
 
       <div
         onDragOver={(e) => {
