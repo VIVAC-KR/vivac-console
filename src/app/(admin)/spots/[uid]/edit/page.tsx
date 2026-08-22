@@ -11,7 +11,7 @@ import {
 } from "@/lib/api";
 import { auth } from "@/auth";
 import { fmtDateTime } from "@/lib/utils";
-import type { SpotDetail, SpotOption, SpotGroupOfSpotItem } from "@/lib/types";
+import type { SpotDetail, SpotOption, SpotGroupOfSpotItem, SpotImageOut } from "@/lib/types";
 import { SpotEditForm } from "@/components/admin/spot-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 import { CopyButton } from "@/components/admin/copy-button";
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
 import { GroupPicker } from "@/components/admin/group-picker";
+import { SpotImageUpload } from "@/components/admin/spot-image-upload";
 
 /** 저장 결과: 성공 시 null, 실패 시 에러 메시지 */
 async function saveSpot(
@@ -69,6 +70,7 @@ export default async function SpotEditPage({
     nearby_facilities,
     has_equipment_rental,
     groups,
+    images,
   ] = await Promise.all([
     apiList<{ uid: string }>("/internal/spot-business-info", {
       spot_uid: uid,
@@ -89,6 +91,7 @@ export default async function SpotEditPage({
         throw err;
       }
     ),
+    apiFetch<SpotImageOut[]>(`/explore/spots/${encodedUid}/images`),
   ]);
   const fieldOptions = { category, amenities, nearby_facilities, has_equipment_rental };
   const businessInfoHref =
@@ -155,6 +158,13 @@ export default async function SpotEditPage({
       <div className="max-w-2xl">
         <ChangeHistory entries={history} />
       </div>
+
+      <section className="flex flex-col gap-3 max-w-2xl">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
+          사진 <span className="text-zinc-400 font-normal normal-case">{images.length}장</span>
+        </h2>
+        <SpotImageUpload spotUid={uid} initialImages={images} />
+      </section>
 
       <section className="flex flex-col gap-3 max-w-2xl">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
