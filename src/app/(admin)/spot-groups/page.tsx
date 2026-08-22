@@ -55,7 +55,7 @@ export default async function SpotGroupsPage({
         </h1>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Link href="/spot-groups/new" className={buttonVariants({ variant: "default" })}>
-            새 그룹
+            추가
           </Link>
           <FacetFilter
             label="공개범위"

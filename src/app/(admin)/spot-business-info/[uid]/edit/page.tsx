@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { apiFetch, apiFetchOr404, apiMutate } from "@/lib/api";
 import { fmtDateTime } from "@/lib/utils";
-import type { BusinessInfoDetail } from "@/lib/types";
+import type { BusinessInfoDetail, SpotDetail } from "@/lib/types";
 import { SbiEditForm } from "@/components/admin/sbi-edit-form";
 import { ChangeHistory, type HistoryEntry } from "@/components/admin/change-history";
 
@@ -27,9 +27,14 @@ export default async function BusinessInfoEditPage({
   );
 
   // 수정 기록 — business_info 레코드 uid로 조회 (실패해도 편집 화면 유지)
-  const history = await apiFetch<HistoryEntry[]>(
-    `/internal/spot-business-info/${encodedUid}/history`
-  ).catch(() => null);
+  const [history, spot] = await Promise.all([
+    apiFetch<HistoryEntry[]>(`/internal/spot-business-info/${encodedUid}/history`).catch(
+      () => null
+    ),
+    apiFetch<SpotDetail>(`/internal/spots/${encodeURIComponent(info.spot_uid)}`).catch(
+      () => null
+    ),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,7 +42,9 @@ export default async function BusinessInfoEditPage({
         <Link href="/spot-business-info" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Business Info 목록
         </Link>
-        <h1 className="mt-2 text-xl font-semibold">Business Info 편집</h1>
+        <h1 className="mt-2 text-xl font-semibold">
+          {spot ? `${spot.title} ` : ""}Business Info 편집
+        </h1>
         <p className="text-xs text-zinc-400 mt-1">
           Spot:{" "}
           <Link
