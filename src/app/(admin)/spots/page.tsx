@@ -3,6 +3,7 @@ import { apiFetch, apiList } from "@/lib/api";
 import { listQuery, PAGE_SIZE } from "@/lib/list-query";
 import { auth } from "@/auth";
 import { Input } from "@/components/ui/input";
+import { buttonVariants } from "@/components/ui/button";
 import { Pager } from "@/components/ui/pager";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { FacetFilter } from "@/components/admin/facet-filter";
@@ -66,6 +67,9 @@ export default async function SpotsPage({
             {isSuperuser && <SpotsBulkIndicator />}
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Link href="/spots/new" className={buttonVariants({ variant: "default" })}>
+              추가
+            </Link>
             {FACETS.map((f, i) => (
               <FacetFilter
                 key={f.param}

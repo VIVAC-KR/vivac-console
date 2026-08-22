@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Pager } from "@/components/ui/pager";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { ClickableRow } from "@/components/admin/clickable-row";
@@ -56,14 +57,19 @@ export default async function BusinessInfoPage({
           Spot Business Info{" "}
           <span className="text-zinc-400 text-base font-normal">{total}개</span>
         </h1>
-        {sp.spot_uid && (
-          <Link
-            href="/spot-business-info"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            필터 해제 ✕
+        <div className="flex items-center gap-3">
+          <Link href="/spot-business-info/new" className={buttonVariants({ variant: "default" })}>
+            추가
           </Link>
-        )}
+          {sp.spot_uid && (
+            <Link
+              href="/spot-business-info"
+              className="text-sm text-blue-600 hover:underline"
+            >
+              필터 해제 ✕
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
