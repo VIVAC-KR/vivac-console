@@ -3,6 +3,16 @@
 import { useRef, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn, formatBytes } from "@/lib/utils";
 import { deleteSpotImage, presignSpotImage, registerSpotImage } from "@/lib/actions/spot-images";
 import type { SpotImageOut, SpotImageRole } from "@/lib/types";
@@ -39,6 +49,7 @@ export function SpotImageUpload({
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingUid, setDeletingUid] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,8 +89,8 @@ export function SpotImageUpload({
   }
 
   // soft delete — DB row/S3는 남고 목록에서만 빠진다 (VAC-12)
-  async function handleRequestDelete(imageUid: string) {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+  async function executeDelete(imageUid: string) {
+    setConfirmTarget(null);
     setDeleteError(null);
     setDeletingUid(imageUid);
     const error = await deleteSpotImage(spotUid, imageUid);
@@ -185,7 +196,7 @@ export function SpotImageUpload({
             )}
             <button
               type="button"
-              onClick={() => handleRequestDelete(img.uid)}
+              onClick={() => setConfirmTarget(img.uid)}
               disabled={deletingUid === img.uid}
               aria-label="사진 삭제"
               className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-100"
@@ -203,6 +214,29 @@ export function SpotImageUpload({
         )}
       </div>
       {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+
+      <AlertDialog
+        open={confirmTarget !== null}
+        onOpenChange={(open) => !open && setConfirmTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>사진을 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              목록에서 즉시 제거됩니다. 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => confirmTarget && executeDelete(confirmTarget)}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div
         onDragOver={(e) => {
