@@ -65,7 +65,7 @@ export function AdminShell({
   ];
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-dvh overflow-hidden">
       {/* Backdrop (모바일 드로어 열렸을 때) */}
       {mobileOpen && (
         <div
@@ -74,15 +74,15 @@ export function AdminShell({
         />
       )}
 
-      {/* Sidebar — 모바일: 슬라이드 드로어 / 데스크톱: 고정(접기 가능) */}
+      {/* Sidebar — 모바일: 슬라이드 드로어 / 데스크톱: 고정(접기 가능). 뷰포트 높이 고정 + nav만 내부 스크롤 */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r bg-zinc-50 transition-transform dark:bg-zinc-950 md:static md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden border-r bg-zinc-50 transition-transform dark:bg-zinc-950 md:static md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           deskCollapsed && "md:hidden"
         )}
       >
-        <div className="flex items-center justify-between border-b px-4 py-5">
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-5">
           <Link
             href="/"
             className="text-sm font-semibold tracking-tight transition-opacity hover:opacity-70"
@@ -108,7 +108,7 @@ export function AdminShell({
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-4 p-3">
+        <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.title ?? gi} className="flex flex-col gap-1">
               {group.title && (
@@ -145,7 +145,7 @@ export function AdminShell({
           ))}
         </nav>
 
-        <div className="flex flex-col gap-3 border-t p-3">
+        <div className="flex shrink-0 flex-col gap-3 border-t p-3">
           <ThemeToggle />
           <p className="truncate text-xs text-zinc-500">{email}</p>
           <form action={signOutAction}>
@@ -162,11 +162,11 @@ export function AdminShell({
       </aside>
 
       {/* Main 컬럼 */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* 상단바 — 모바일 항상 / 데스크톱은 접혔을 때만 */}
         <header
           className={cn(
-            "flex h-14 items-center gap-3 border-b px-4 md:hidden",
+            "flex h-14 shrink-0 items-center gap-3 border-b px-4 md:hidden",
             deskCollapsed && "md:flex"
           )}
         >
