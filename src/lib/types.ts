@@ -145,3 +145,20 @@ export type SpotGroupOfSpotItem = {
   visibility: SpotGroupVisibility;
   added_at: string | null;
 };
+
+export const SPOT_IMAGE_ROLES = ["thumbnail", "detail"] as const;
+export type SpotImageRole = (typeof SPOT_IMAGE_ROLES)[number];
+
+export type SpotImageOut = {
+  uid: string;
+  role: SpotImageRole;
+  sort_order: number;
+  is_public: boolean;
+  url: string;
+};
+
+export type ImagePresignResponse = {
+  upload_url: string;
+  s3_key: string;
+  expires_in: number;
+};
